@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  weasyprint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: weasyprint:latest
+    ports:
+      - 8093:8080
