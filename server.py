@@ -7,7 +7,8 @@ It expects a multipart/form-data upload containing a html file, an optional
 css file and optional attachments.
 """
 from aiohttp import web
-from weasyprint import HTML, CSS
+from weasyprint import CSS
+from weasyprint import HTML
 import logging
 import os.path
 import tempfile
@@ -49,9 +50,9 @@ async def render_pdf(request):
             logger.info('Bad request. No html file provided.')
             return web.Response(status=400, text=f"No html file provided.")
 
-        html = HTML(filename=form_data['html'])
+        html = HTML(filename=form_data['html'], url_fetcher=url_fetcher)
         if 'css' in form_data:
-            css = CSS(filename=form_data['css'])
+            css = CSS(filename=form_data['css'], url_fetcher=url_fetcher)
         else:
             css = CSS(string='@page { size: A4; margin: 2cm 2.5cm; }')
 
@@ -108,6 +109,10 @@ async def stream_file(request, filename, content_type):
 
 async def healthcheck(request):
     return web.Response(status=200, text=f"OK")
+
+
+def url_fetcher(url):
+    raise ValueError('External resources are not allowed')
 
 
 if __name__ == '__main__':
