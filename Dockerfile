@@ -1,50 +1,47 @@
-FROM alpine:3.13 as builder
+FROM alpine:3.16 as pkg-builder
 
-# Needs dependencies form edge/community
-# RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-#   py3-weasyprint \
-#   py3-aiohttp
+RUN apk -U add \
+    sudo \
+    alpine-sdk \
+    apkbuild-pypi
 
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    jpeg-dev \
-    zlib-dev \
-    libffi-dev \
-    cairo-dev \
-    pango-dev \
-    gdk-pixbuf-dev \
-    python3 \
-    py3-pip \
-    py3-cffi \
-    py3-pillow \
-    py3-lxml
+RUN mkdir -p /var/cache/distfiles && \
+    adduser -D packager && \
+    addgroup packager abuild && \
+    chgrp abuild /var/cache/distfiles && \
+    chmod g+w /var/cache/distfiles && \
+    echo "packager ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-RUN pip3 install weasyprint
+WORKDIR /work
+USER packager
+
+RUN abuild-keygen -a -i -n
+
+COPY --chown=packager:packager packages/ ./
+
+RUN cd py3-pydyf && \
+    abuild -r && \
+    cd ../py3-zopfli && \
+    abuild -r && \
+    cd ../py3-weasyprint && \
+    abuild -r
 
 
-FROM alpine:3.13
+FROM alpine:3.16
 
 RUN addgroup --system weasyprint \
      && adduser --system --ingroup weasyprint weasyprint
 
-RUN apk add --no-cache \
-    jpeg \
-    zlib \
-    libimagequant \
-    lcms2 \
-    openjpeg \
-    libwebp \
-    libffi \
-    cairo \
-    pango \
-    gdk-pixbuf \
-    ttf-liberation \
+COPY --from=pkg-builder /home/packager/packages/work/ /packages/
+COPY --from=pkg-builder /home/packager/.abuild/*.pub /etc/apk/keys/
+
+RUN apk add --no-cache --repository /packages \
+    font-liberation \
+    font-liberation-sans-narrow \
     ttf-linux-libertine \
     python3 \
-    py3-aiohttp
-
-COPY --from=builder /usr/lib/python3.8/site-packages/ /usr/lib/python3.8/site-packages/
+    py3-aiohttp \
+    py3-weasyprint
 
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
