@@ -5,6 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: weasyprint:latest
+    image: 4teamwork/weasyprint:latest
     ports:
-      - 8093:8080
+      - 3000:8080
