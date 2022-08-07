@@ -28,7 +28,7 @@ async def render_pdf(request):
             'Bad request. Received content type %s instead of multipart/form-data.',
             request.content_type,
         )
-        return web.Response(status=400, text=f"Multipart request required.")
+        return web.Response(status=400, text="Multipart request required.")
 
     reader = await request.multipart()
 
@@ -48,7 +48,7 @@ async def render_pdf(request):
 
         if 'html' not in form_data:
             logger.info('Bad request. No html file provided.')
-            return web.Response(status=400, text=f"No html file provided.")
+            return web.Response(status=400, text="No html file provided.")
 
         html = HTML(filename=form_data['html'], url_fetcher=url_fetcher)
         if 'css' in form_data:
@@ -108,7 +108,7 @@ async def stream_file(request, filename, content_type):
 
 
 async def healthcheck(request):
-    return web.Response(status=200, text=f"OK")
+    return web.Response(status=200, text="OK")
 
 
 def url_fetcher(url):
