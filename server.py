@@ -8,7 +8,7 @@ css file and optional attachments.
 """
 from aiohttp import web
 from weasyprint import CSS
-from weasyprint import HTML
+from weasyprint import default_url_fetcher, HTML
 import logging
 import os.path
 import tempfile
@@ -36,7 +36,7 @@ async def render_pdf(request):
         while True:
             part = await reader.next()
 
-            if part is None:
+            if part is None or part.name is None:
                 break
 
             if (
@@ -50,9 +50,9 @@ async def render_pdf(request):
             logger.info('Bad request. No html file provided.')
             return web.Response(status=400, text="No html file provided.")
 
-        html = HTML(filename=form_data['html'], url_fetcher=url_fetcher)
+        html = HTML(filename=form_data['html'], url_fetcher=default_url_fetcher)
         if 'css' in form_data:
-            css = CSS(filename=form_data['css'], url_fetcher=url_fetcher)
+            css = CSS(filename=form_data['css'], url_fetcher=default_url_fetcher)
         else:
             css = CSS(string='@page { size: A4; margin: 2cm 2.5cm; }')
 

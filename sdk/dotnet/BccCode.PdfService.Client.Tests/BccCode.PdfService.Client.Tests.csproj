@@ -27,7 +27,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="images\" />
+    <None Update="assets\style.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="assets\test.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
