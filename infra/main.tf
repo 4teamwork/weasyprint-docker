@@ -82,23 +82,28 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = "BCC-Platform"
 }
 
-# Get platform resource group
-data "azurerm_resource_group" "platform_rg" {
-  provider  = azurerm.platform
-  name      = local.platform_resource_group
-}
-
 # Analytics Workspace
 module "log_analytics_workspace" {
 
   source                           = "./modules/azure/log_analytics"
   name                             = "${local.resource_prefix}-logs"
   location                         = local.location
-  resource_group_name              = azurerm_resource_group.rg.name
+  resource_group_name              = data.azurerm_resource_group.rg.name
   tags                             = local.tags
   providers = {
     azurerm = azurerm.main
   }
+}
+
+# Application Insights
+module "application_insights" {
+  source                           = "./modules/azure/application_insights"
+  name                             = "${local.resource_prefix}-env-insights"
+  location                         = local.location
+  resource_group_name              = data.azurerm_resource_group.rg.name
+  tags                             = local.tags
+  application_type                 = "web"
+  workspace_id                     = module.log_analytics_workspace.id
 }
 
 # VLAN for Container Environment
@@ -106,7 +111,7 @@ module "container_apps_vlan" {
   source                           = "./modules/azure/container_apps_vlan"
   name                             = "${local.resource_prefix}-vlan"
   location                         = local.location
-  resource_group_name              = azurerm_resource_group.rg.name
+  resource_group_name              = data.azurerm_resource_group.rg.name
   tags                             = local.tags
 
   depends_on = [
@@ -124,7 +129,7 @@ module "container_apps_env"  {
   source                           = "./modules/azure/container_apps_env"
   managed_environment_name         = "${local.resource_prefix}-env"
   location                         = local.location
-  resource_group_id                = azurerm_resource_group.rg.id
+  resource_group_id                = data.azurerm_resource_group.rg.id
   tags                             = local.tags
   instrumentation_key              = module.application_insights.instrumentation_key
   workspace_id                     = module.log_analytics_workspace.workspace_id
@@ -145,7 +150,7 @@ module "api_container_app" {
   source                           = "./modules/azure/container_apps"
   managed_environment_id           = module.container_apps_env.id
   location                         = local.location
-  resource_group_id                = azurerm_resource_group.rg.id
+  resource_group_id                = data.azurerm_resource_group.rg.id
   tags                             = local.tags
   container_app                   = {
     name              = "${local.resource_prefix}-api"
@@ -207,7 +212,7 @@ module "gateway" {
   tags                   = local.tags
   endpoint_domain_name  = var.endpoint_domain_name
   endpoint_name         = "default"
-  resource_group_id     = azurerm_resource_group.rg.id
+  resource_group_id     = data.azurerm_resource_group.rg.id
   providers = {
     azurerm = azurerm.main
   }
@@ -222,8 +227,8 @@ module "api_route" {
   origin_path           = "/" 
   endpoint_name         = "default"
   endpoint_domain_name  = var.endpoint_domain_name
-  resource_group_id     = azurerm_resource_group.rg.id
-  resource_group_name   = azurerm_resource_group.rg.name 
+  resource_group_id     = data.azurerm_resource_group.rg.id
+  resource_group_name   = data.azurerm_resource_group.rg.name 
   depends_on = [
     module.gateway
   ]

@@ -18,13 +18,7 @@ variable "environment" {
   default = "prod"
 }
 
-variable "github-token" {
-  type = string
-  sensitive = true
-  default = ""
-}
-
-variable "resource-prefix" {
+variable "resource_prefix" {
   type    = string
   default = "pdf-service"
 }
