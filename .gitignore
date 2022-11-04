@@ -3,3 +3,8 @@
 /pyvenv.cfg
 /venv/
 __pycache__
+/sdk/dotnet/BccCode.PdfService.Client/.vs/BccCode.PdfService.Client
+/sdk/dotnet/BccCode.PdfService.Client/bin/Debug/net6.0
+/sdk/dotnet/BccCode.PdfService.Client/obj
+/sdk/dotnet/BccCode.PdfService.Client.Tests/bin/Debug/net6.0
+/sdk/dotnet/BccCode.PdfService.Client.Tests/obj

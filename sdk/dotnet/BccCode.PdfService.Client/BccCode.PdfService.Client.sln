@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32819.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BccCode.PdfService.Client", "BccCode.PdfService.Client.csproj", "{B02561CC-A8C8-48B4-8D18-53CC0CC52767}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BccCode.PdfService.Client.Tests", "..\BccCode.PdfService.Client.Tests\BccCode.PdfService.Client.Tests.csproj", "{FB199CAD-C716-4B5A-B2BA-26ABC0FC7EC8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B02561CC-A8C8-48B4-8D18-53CC0CC52767}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B02561CC-A8C8-48B4-8D18-53CC0CC52767}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B02561CC-A8C8-48B4-8D18-53CC0CC52767}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B02561CC-A8C8-48B4-8D18-53CC0CC52767}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB199CAD-C716-4B5A-B2BA-26ABC0FC7EC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB199CAD-C716-4B5A-B2BA-26ABC0FC7EC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB199CAD-C716-4B5A-B2BA-26ABC0FC7EC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB199CAD-C716-4B5A-B2BA-26ABC0FC7EC8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {40C7AF22-CA6C-4248-A427-96A82AD9F40D}
+	EndGlobalSection
+EndGlobal
