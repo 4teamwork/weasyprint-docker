@@ -208,6 +208,7 @@ module "gateway" {
   endpoint_domain_name  = var.endpoint_domain_name
   endpoint_name         = "default"
   resource_group_id     = azurerm_resource_group.rg.id
+  resource_group_name   = azurerm_resource_group.rg.name
   providers = {
     azurerm = azurerm.main
   }
@@ -223,6 +224,7 @@ module "api_route" {
   endpoint_name         = "default"
   endpoint_domain_name  = var.endpoint_domain_name
   resource_group_id     = azurerm_resource_group.rg.id
+  resource_group_name   = azurerm_resource_group.rg.name 
   depends_on = [
     module.gateway
   ]
