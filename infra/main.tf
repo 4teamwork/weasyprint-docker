@@ -104,6 +104,9 @@ module "application_insights" {
   tags                             = local.tags
   application_type                 = "web"
   workspace_id                     = module.log_analytics_workspace.id
+  providers = {
+    azurerm = azurerm.main
+  }
 }
 
 # VLAN for Container Environment
