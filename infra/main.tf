@@ -46,6 +46,7 @@ provider "azurerm" {
   alias             = "main"
   subscription_id   = local.azure_subscription_id
   tenant_id         = local.azure_tenant_id
+  skip_provider_registration = true
   features {}
 }
 
@@ -53,6 +54,7 @@ provider "azurerm" {
   alias             = "platform"
   subscription_id   = local.azure_subscription_id
   tenant_id         = local.azure_tenant_id
+  skip_provider_registration = true
   features {}
 }
 
