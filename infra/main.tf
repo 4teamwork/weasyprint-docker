@@ -143,66 +143,66 @@ module "container_apps_env"  {
 }
 
 
-# #ref:
-# # https://github.com/Azure/azure-resource-manager-schemas/blob/68af7da6820cc91660904b34813aeee606c400f1/schemas/2022-03-01/Microsoft.App.json
+#ref:
+# https://github.com/Azure/azure-resource-manager-schemas/blob/68af7da6820cc91660904b34813aeee606c400f1/schemas/2022-03-01/Microsoft.App.json
 
-# # API Container App
-# module "api_container_app" {
-#   source                           = "./modules/azure/container_apps"
-#   managed_environment_id           = module.container_apps_env.id
-#   location                         = local.location
-#   resource_group_id                = data.azurerm_resource_group.rg.id
-#   tags                             = local.tags
-#   container_app                   = {
-#     name              = "${local.resource_prefix}-api"
-#     configuration      = {
-#       ingress          = {
-#         external       = true
-#         targetPort     = 8080
-#       }
-#       dapr             = {
-#         enabled        = true
-#         appId          = "${local.resource_prefix}-api"
-#         appProtocol    = "http"
-#         appPort        = 8080
-#       }
-#       secrets          = []
-#       # customDomains  = [
-#       #   {
-#       #     bindingType   = "SniEnabled",
-#       #     certificateId = "",
-#       #     name          = module.api_container_app.domain_name
-#       #   }
-#       # ]
-#     }
-#     template          = {
-#       containers      = [{
-#         image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
-#         name          = "bcc-code-run-api"
-#         env           = [{
-#             name        = "APP_PORT"
-#             value       = 8080
-#           },
-#           {
-#             name        = "ENVIRONMENT_NAME"
-#             value       = terraform.workspace
-#           }
-#         ]
-#         resources     = {
-#           cpu         = 0.5
-#           memory      = "1Gi"
-#         }
-#       }]
-#       scale           = {
-#         minReplicas   = 0
-#         maxReplicas   = 10
-#       }
-#     }
-#   }
-#   providers = {
-#     azurerm = azurerm.main
-#   }
-# }
+# API Container App
+module "api_container_app" {
+  source                           = "./modules/azure/container_apps"
+  managed_environment_id           = module.container_apps_env.id
+  location                         = local.location
+  resource_group_id                = data.azurerm_resource_group.rg.id
+  tags                             = local.tags
+  container_app                   = {
+    name              = "${local.resource_prefix}-api"
+    configuration      = {
+      ingress          = {
+        external       = true
+        targetPort     = 8080
+      }
+      dapr             = {
+        enabled        = true
+        appId          = "${local.resource_prefix}-api"
+        appProtocol    = "http"
+        appPort        = 8080
+      }
+      secrets          = []
+      # customDomains  = [
+      #   {
+      #     bindingType   = "SniEnabled",
+      #     certificateId = "",
+      #     name          = module.api_container_app.domain_name
+      #   }
+      # ]
+    }
+    template          = {
+      containers      = [{
+        image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
+        name          = "bcc-code-run-api"
+        env           = [{
+            name        = "APP_PORT"
+            value       = 8080
+          },
+          {
+            name        = "ENVIRONMENT_NAME"
+            value       = terraform.workspace
+          }
+        ]
+        resources     = {
+          cpu         = 0.5
+          memory      = "1Gi"
+        }
+      }]
+      scale           = {
+        minReplicas   = 0
+        maxReplicas   = 10
+      }
+    }
+  }
+  providers = {
+    azurerm = azurerm.main
+  }
+}
 
 # # Add gateway
 
