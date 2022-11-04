@@ -32,6 +32,7 @@ terraform {
 locals {
     azure_tenant_id             = var.azure_tenant_id
     azure_subscription_id       = var.azure_subscription_id
+    azure_platform_subscription_id = var.azure_platform_subscription_id
     location                    = var.location
     resource_group              = "${var.resource_prefix}-${var.environment}"
     resource_prefix             = "${var.resource_prefix}"
@@ -53,7 +54,7 @@ provider "azurerm" {
 
 provider "azurerm" {
   alias             = "platform"
-  subscription_id   = local.azure_subscription_id
+  subscription_id   = local.azure_platform_subscription_id
   tenant_id         = local.azure_tenant_id
   skip_provider_registration = true
   features {}
@@ -80,17 +81,17 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = "BCC-Platform"
 }
 
-# # Analytics Workspace
-# module "log_analytics_workspace" {
-#   source                           = "./modules/azure/log_analytics"
-#   name                             = "${local.resource_prefix}-logs"
-#   location                         = local.location
-#   resource_group_name              = data.azurerm_resource_group.rg.name
-#   tags                             = local.tags
-#   providers = {
-#     azurerm = azurerm.main
-#   }
-# }
+# Analytics Workspace
+module "log_analytics_workspace" {
+  source                           = "./modules/azure/log_analytics"
+  name                             = "${local.resource_prefix}-logs"
+  location                         = local.location
+  resource_group_name              = data.azurerm_resource_group.rg.name
+  tags                             = local.tags
+  providers = {
+    azurerm = azurerm.main
+  }
+}
 
 # # Application Insights
 # module "application_insights" {
