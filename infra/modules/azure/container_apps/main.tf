@@ -74,6 +74,8 @@ resource "azapi_resource" "container_app" {
     }
   })
   
-  response_export_values = ["properties.configuration.ingress.fqdn"]
+  ignore_missing_property = true
+  ignore_casing           = true  
+  response_export_values  = ["properties.configuration.ingress.fqdn"]
 
 }
