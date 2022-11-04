@@ -1,6 +1,8 @@
-# weasyprint
+# PDF Server
 
-A dockerized web service for creating PDFs from HTML using WeasyPrint
+An API for generating PDF files.
+
+The API is based on a fork from https://github.com/4teamwork/weasyprint-docker (based on WeasyPrint)
 
 ## Description
 
