@@ -67,10 +67,6 @@ provider "azapi" {
 }
 
 
-data "azurerm_client_config" "current" {}
-
-
-
 # Get Resource Group
 data "azurerm_resource_group" "rg" {
   provider = azurerm.main
