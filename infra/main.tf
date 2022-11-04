@@ -84,160 +84,159 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = "BCC-Platform"
 }
 
-# Analytics Workspace
-module "log_analytics_workspace" {
+# # Analytics Workspace
+# module "log_analytics_workspace" {
+#   source                           = "./modules/azure/log_analytics"
+#   name                             = "${local.resource_prefix}-logs"
+#   location                         = local.location
+#   resource_group_name              = data.azurerm_resource_group.rg.name
+#   tags                             = local.tags
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
 
-  source                           = "./modules/azure/log_analytics"
-  name                             = "${local.resource_prefix}-logs"
-  location                         = local.location
-  resource_group_name              = data.azurerm_resource_group.rg.name
-  tags                             = local.tags
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+# # Application Insights
+# module "application_insights" {
+#   source                           = "./modules/azure/application_insights"
+#   name                             = "${local.resource_prefix}-env-insights"
+#   location                         = local.location
+#   resource_group_name              = data.azurerm_resource_group.rg.name
+#   tags                             = local.tags
+#   application_type                 = "web"
+#   workspace_id                     = module.log_analytics_workspace.id
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
 
-# Application Insights
-module "application_insights" {
-  source                           = "./modules/azure/application_insights"
-  name                             = "${local.resource_prefix}-env-insights"
-  location                         = local.location
-  resource_group_name              = data.azurerm_resource_group.rg.name
-  tags                             = local.tags
-  application_type                 = "web"
-  workspace_id                     = module.log_analytics_workspace.id
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+# # VLAN for Container Environment
+# module "container_apps_vlan" {
+#   source                           = "./modules/azure/container_apps_vlan"
+#   name                             = "${local.resource_prefix}-vlan"
+#   location                         = local.location
+#   resource_group_name              = data.azurerm_resource_group.rg.name
+#   tags                             = local.tags
 
-# VLAN for Container Environment
-module "container_apps_vlan" {
-  source                           = "./modules/azure/container_apps_vlan"
-  name                             = "${local.resource_prefix}-vlan"
-  location                         = local.location
-  resource_group_name              = data.azurerm_resource_group.rg.name
-  tags                             = local.tags
+#   depends_on = [
+#     data.azurerm_resource_group.rg
+#   ]
 
-  depends_on = [
-    data.azurerm_resource_group.rg
-  ]
-
-  providers = {
-    azurerm = azurerm.main
-  }
-}
-
-
-# Container Environment
-module "container_apps_env"  {
-  source                           = "./modules/azure/container_apps_env"
-  managed_environment_name         = "${local.resource_prefix}-env"
-  location                         = local.location
-  resource_group_id                = data.azurerm_resource_group.rg.id
-  tags                             = local.tags
-  instrumentation_key              = module.application_insights.instrumentation_key
-  workspace_id                     = module.log_analytics_workspace.workspace_id
-  primary_shared_key               = module.log_analytics_workspace.primary_shared_key
-  vlan_subnet_id                   = module.container_apps_vlan.subnet_id
-
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
 
 
-#ref:
-# https://github.com/Azure/azure-resource-manager-schemas/blob/68af7da6820cc91660904b34813aeee606c400f1/schemas/2022-03-01/Microsoft.App.json
+# # Container Environment
+# module "container_apps_env"  {
+#   source                           = "./modules/azure/container_apps_env"
+#   managed_environment_name         = "${local.resource_prefix}-env"
+#   location                         = local.location
+#   resource_group_id                = data.azurerm_resource_group.rg.id
+#   tags                             = local.tags
+#   instrumentation_key              = module.application_insights.instrumentation_key
+#   workspace_id                     = module.log_analytics_workspace.workspace_id
+#   primary_shared_key               = module.log_analytics_workspace.primary_shared_key
+#   vlan_subnet_id                   = module.container_apps_vlan.subnet_id
 
-# API Container App
-module "api_container_app" {
-  source                           = "./modules/azure/container_apps"
-  managed_environment_id           = module.container_apps_env.id
-  location                         = local.location
-  resource_group_id                = data.azurerm_resource_group.rg.id
-  tags                             = local.tags
-  container_app                   = {
-    name              = "${local.resource_prefix}-api"
-    configuration      = {
-      ingress          = {
-        external       = true
-        targetPort     = 8080
-      }
-      dapr             = {
-        enabled        = true
-        appId          = "${local.resource_prefix}-api"
-        appProtocol    = "http"
-        appPort        = 8080
-      }
-      secrets          = []
-      # customDomains  = [
-      #   {
-      #     bindingType   = "SniEnabled",
-      #     certificateId = "",
-      #     name          = module.api_container_app.domain_name
-      #   }
-      # ]
-    }
-    template          = {
-      containers      = [{
-        image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
-        name          = "bcc-code-run-api"
-        env           = [{
-            name        = "APP_PORT"
-            value       = 8080
-          },
-          {
-            name        = "ENVIRONMENT_NAME"
-            value       = terraform.workspace
-          }
-        ]
-        resources     = {
-          cpu         = 0.5
-          memory      = "1Gi"
-        }
-      }]
-      scale           = {
-        minReplicas   = 0
-        maxReplicas   = 10
-      }
-    }
-  }
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
 
-# Add gateway
 
-module "gateway" {
-  source                = "./modules/azure/front_door"
-  name                  = "${local.resource_prefix}-gateway"
-  location              = local.location
-  tags                   = local.tags
-  endpoint_domain_name  = var.endpoint_domain_name
-  endpoint_name         = "default"
-  resource_group_id     = data.azurerm_resource_group.rg.id
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+# #ref:
+# # https://github.com/Azure/azure-resource-manager-schemas/blob/68af7da6820cc91660904b34813aeee606c400f1/schemas/2022-03-01/Microsoft.App.json
 
-module "api_route" {
-  source                = "./modules/azure/front_door_route"
-  name                  = "${local.resource_prefix}-svc-route"
-  front_door_name       = "${local.resource_prefix}-gateway"
-  origin_host           = module.api_container_app.domain_name
-  route_path            = "/*"
-  origin_path           = "/" 
-  endpoint_name         = "default"
-  endpoint_domain_name  = var.endpoint_domain_name
-  resource_group_id     = data.azurerm_resource_group.rg.id
-  resource_group_name   = data.azurerm_resource_group.rg.name 
-  depends_on = [
-    module.gateway
-  ]
-  providers = {
-    azurerm = azurerm.main
-  }
-}
+# # API Container App
+# module "api_container_app" {
+#   source                           = "./modules/azure/container_apps"
+#   managed_environment_id           = module.container_apps_env.id
+#   location                         = local.location
+#   resource_group_id                = data.azurerm_resource_group.rg.id
+#   tags                             = local.tags
+#   container_app                   = {
+#     name              = "${local.resource_prefix}-api"
+#     configuration      = {
+#       ingress          = {
+#         external       = true
+#         targetPort     = 8080
+#       }
+#       dapr             = {
+#         enabled        = true
+#         appId          = "${local.resource_prefix}-api"
+#         appProtocol    = "http"
+#         appPort        = 8080
+#       }
+#       secrets          = []
+#       # customDomains  = [
+#       #   {
+#       #     bindingType   = "SniEnabled",
+#       #     certificateId = "",
+#       #     name          = module.api_container_app.domain_name
+#       #   }
+#       # ]
+#     }
+#     template          = {
+#       containers      = [{
+#         image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
+#         name          = "bcc-code-run-api"
+#         env           = [{
+#             name        = "APP_PORT"
+#             value       = 8080
+#           },
+#           {
+#             name        = "ENVIRONMENT_NAME"
+#             value       = terraform.workspace
+#           }
+#         ]
+#         resources     = {
+#           cpu         = 0.5
+#           memory      = "1Gi"
+#         }
+#       }]
+#       scale           = {
+#         minReplicas   = 0
+#         maxReplicas   = 10
+#       }
+#     }
+#   }
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
+
+# # Add gateway
+
+# module "gateway" {
+#   source                = "./modules/azure/front_door"
+#   name                  = "${local.resource_prefix}-gateway"
+#   location              = local.location
+#   tags                  = local.tags
+#   endpoint_domain_name  = var.endpoint_domain_name
+#   endpoint_name         = "default"
+#   resource_group_id     = data.azurerm_resource_group.rg.id
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
+
+# module "api_route" {
+#   source                = "./modules/azure/front_door_route"
+#   name                  = "${local.resource_prefix}-svc-route"
+#   front_door_name       = "${local.resource_prefix}-gateway"
+#   origin_host           = module.api_container_app.domain_name
+#   route_path            = "/*"
+#   origin_path           = "/" 
+#   endpoint_name         = "default"
+#   endpoint_domain_name  = var.endpoint_domain_name
+#   resource_group_id     = data.azurerm_resource_group.rg.id
+#   resource_group_name   = data.azurerm_resource_group.rg.name 
+#   depends_on = [
+#     module.gateway
+#   ]
+#   providers = {
+#     azurerm = azurerm.main
+#   }
+# }
