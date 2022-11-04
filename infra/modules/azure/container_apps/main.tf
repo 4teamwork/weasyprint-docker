@@ -60,10 +60,10 @@ resource "azapi_resource" "container_app" {
         registries = [for reg in var.registries : {
           server = reg.login_server
           username = reg.admin_username
-          passwordSecretRef = "acr-pw-${replace(reg.login_server,".",",")}"
+          passwordSecretRef = "acr-pw-${replace(reg.login_server,".","-")}"
         }]
         secrets = concat((var.container_app.configuration.secrets == null ? [] : var.container_app.configuration.secrets), [for reg in var.registries : {
-          name = "acr-pw-${replace(reg.login_server,".",",")}"
+          name = "acr-pw-${replace(reg.login_server,".","-")}"
           value = reg.admin_password
         }])
         ingress             = try(var.container_app.configuration.ingress, null)
