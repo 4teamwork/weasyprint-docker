@@ -20,6 +20,15 @@ variable "location" {
   type        = string
 }
 
+variable "registries" {
+  description = "Container registry details"
+  type = list(object({
+    login_server    = string
+    admin_username  = string
+    admin_password  = string
+  }))
+}
+
 variable "container_app" {
   description = "Specifies the container apps in the managed environment."
   type = object({

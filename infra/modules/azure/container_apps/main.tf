@@ -40,18 +40,6 @@ resource "azapi_resource" "daprComponents" {
   })
 }
 
-resource "random_string" "acr_secret_ref" {
-  length  = 12
-  special = false
-  upper   = false
-  numeric  = true
-}
-
-data "azurerm_container_registry" "acr" {
-  name                = "bccplatform"
-  resource_group_name = "BCC-Platform"
-}
-
 #ref
 # https://raw.githubusercontent.com/Azure/azure-resource-manager-schemas/68af7da6820cc91660904b34813aeee606c400f1/schemas/2022-03-01/Microsoft.App.json
 
@@ -69,14 +57,14 @@ resource "azapi_resource" "container_app" {
 
       managedEnvironmentId  = var.managed_environment_id
       configuration         = {
-        registries = [{
-          server = data.azurerm_container_registry.acr.login_server
-          username = data.azurerm_container_registry.acr.admin_username
-          passwordSecretRef = "acr-pw-${random_string.acr_secret_ref.result}"
+        registries = [for reg in var.registries : {
+          server = reg.login_server
+          username = reg.admin_username
+          passwordSecretRef = "acr-pw-${reg.login_server}"
         }]
-        secrets = concat((var.container_app.configuration.secrets == null ? [] : var.container_app.configuration.secrets), [{
-          name = "acr-pw-${random_string.acr_secret_ref.result}"
-          value = data.azurerm_container_registry.acr.admin_password
+        secrets = concat((var.container_app.configuration.secrets == null ? [] : var.container_app.configuration.secrets), [for reg in var.registries : {
+          name = "acr-pw-${reg.login_server}"
+          value = reg.admin_password
         }])
         ingress             = try(var.container_app.configuration.ingress, null)
         dapr                = try(var.container_app.configuration.dapr, null)

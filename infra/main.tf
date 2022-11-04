@@ -153,6 +153,11 @@ module "api_container_app" {
   location                         = local.location
   resource_group_id                = data.azurerm_resource_group.rg.id
   tags                             = local.tags
+  registries = [{
+    admin_password = data.azurerm_container_registry.acr.admin_password
+    admin_username = data.azurerm_container_registry.acr.admin_username
+    login_server = data.azurerm_container_registry.acr.login_server
+  }]
   container_app                   = {
     name              = "${local.resource_prefix}-api"
     configuration      = {
