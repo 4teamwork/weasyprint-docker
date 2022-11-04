@@ -71,8 +71,6 @@ data "azurerm_client_config" "current" {}
 data "azurerm_resource_group" "rg" {
   provider = azurerm.main
   name     = local.resource_group
-  location = local.location
-  tags     = local.tags
 }
 
 # Get Container Registry
@@ -118,7 +116,7 @@ module "container_apps_vlan" {
   tags                             = local.tags
 
   depends_on = [
-    azurerm_resource_group.rg
+    data.azurerm_resource_group.rg
   ]
 
   providers = {
