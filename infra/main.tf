@@ -166,10 +166,10 @@ module "api_container_app" {
         targetPort     = 5130
       }
       dapr             = {
-        enabled        = true
-        appId          = "${local.resource_prefix}"
-        appProtocol    = "http"
-        appPort        = 5130
+        enabled        = false
+        # appId          = "${local.resource_prefix}"
+        # appProtocol    = "http"
+        # appPort        = 5130
       }
       secrets          = [
           {
@@ -228,8 +228,8 @@ module "api_container_app" {
           },
         ]
         resources     = {
-          cpu         = 0.5
-          memory      = "1Gi"
+          cpu         = 0.25
+          memory      = "0.5Gi"
         }
       }]
       scale           = {
