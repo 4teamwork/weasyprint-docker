@@ -7,9 +7,11 @@
     <UserSecretsId>ab59a274-8261-4ead-8582-22a020f79451</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <ApplicationInsightsResourceId>/subscriptions/7e26d6b5-d4a4-4eea-bfd8-ddac86d350b4/resourceGroups/pdf-service-prod/providers/microsoft.insights/components/pdf-service-env-insights</ApplicationInsightsResourceId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
