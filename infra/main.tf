@@ -159,17 +159,17 @@ module "api_container_app" {
     login_server = data.azurerm_container_registry.acr.login_server
   }]
   container_app                   = {
-    name              = "${local.resource_prefix}-api"
+    name              = "${local.resource_prefix}"
     configuration      = {
       ingress          = {
         external       = true
-        targetPort     = 8080
+        targetPort     = 5130
       }
       dapr             = {
         enabled        = true
-        appId          = "${local.resource_prefix}-api"
+        appId          = "${local.resource_prefix}"
         appProtocol    = "http"
-        appPort        = 8080
+        appPort        = 5130
       }
       secrets          = []
       # customDomains  = [
@@ -183,10 +183,31 @@ module "api_container_app" {
     template          = {
       containers      = [{
         image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
-        name          = "bcc-code-run-api"
+        name          = "${local.resource_prefix}"
         env           = [{
             name        = "APP_PORT"
             value       = 8080
+          },
+          {
+            name        = "ENVIRONMENT_NAME"
+            value       = terraform.workspace
+          }
+        ]
+        resources     = {
+          cpu         = 0.5
+          memory      = "1Gi"
+        }
+      },
+      {
+        image         = "hello-world:latest" //"bccplatform.azurecr.io/bcc-code-run-prod-api:latest"
+        name          = "${local.resource_prefix}-proxy"
+        env           = [{
+            name        = "APP_PORT"
+            value       = 5130
+          },
+          {
+            name        = "ASPNETCORE_URLS"
+            value       = "http://+:5130"
           },
           {
             name        = "ENVIRONMENT_NAME"
