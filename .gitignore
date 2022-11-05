@@ -11,3 +11,4 @@ __pycache__
 /proxy/BccCode.PdfServer.Proxy/.vs/BccCode.PdfServer.Proxy
 /proxy/BccCode.PdfServer.Proxy/bin/Debug/net6.0
 /proxy/BccCode.PdfServer.Proxy/obj
+/proxy/BccCode.PdfServer.Proxy/Properties/serviceDependencies.local.json.user
