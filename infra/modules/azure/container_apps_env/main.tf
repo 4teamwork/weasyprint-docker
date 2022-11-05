@@ -50,4 +50,7 @@ resource "azapi_resource" "managed_environment" {
         tags
     ]
   }
+  
+  ignore_missing_property = true
+  ignore_casing           = true  
 }

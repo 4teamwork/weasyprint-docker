@@ -171,7 +171,12 @@ module "api_container_app" {
         appProtocol    = "http"
         appPort        = 5130
       }
-      secrets          = []
+      secrets          = [
+          {
+            name    = "application-insights-connection-string"
+            value   =  module.application_insights.connection_string
+          }
+      ]
       # customDomains  = [
       #   {
       #     bindingType   = "SniEnabled",
@@ -212,7 +217,15 @@ module "api_container_app" {
           {
             name        = "ENVIRONMENT_NAME"
             value       = terraform.workspace
-          }
+          },
+          {
+            name        = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+            secretRef   = "application-insights-connection-string"
+          },
+          {
+            name        = "APPLICATIONINSIGHTS__CONNECTIONSTRING"
+            secretRef   = "application-insights-connection-string"
+          },
         ]
         resources     = {
           cpu         = 0.5
