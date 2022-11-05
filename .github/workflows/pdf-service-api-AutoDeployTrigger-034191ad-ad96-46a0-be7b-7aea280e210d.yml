@@ -31,13 +31,21 @@ jobs:
           username: ${{ secrets.PDFSERVICEAPI_REGISTRY_USERNAME }}
           password: ${{ secrets.PDFSERVICEAPI_REGISTRY_PASSWORD }}
 
-      - name: Build and push container image to registry
+      - name: Build and push container image for service to registry
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: bccplatform.azurecr.io/pdf-service-api:${{ github.sha }}
+          tags: bccplatform.azurecr.io/pdf-service:${{ github.sha }}
           file: ./Dockerfile
           context: ./
+
+      - name: Build and push container image for proxy to registry
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: bccplatform.azurecr.io/pdf-service-proxy:${{ github.sha }}
+          file: ./proxy/BccCode.PdfServer.Proxy/Dockerfile
+          context: ./proxy/BccCode.PdfServer.Proxy/
 
 
   deploy:
@@ -56,5 +64,6 @@ jobs:
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n pdf-service-api -g pdf-service-prod --server bccplatform.azurecr.io --username  ${{ secrets.PDFSERVICEAPI_REGISTRY_USERNAME }} --password ${{ secrets.PDFSERVICEAPI_REGISTRY_PASSWORD }}
-            az containerapp update -n pdf-service-api -g pdf-service-prod --image bccplatform.azurecr.io/pdf-service-api:${{ github.sha }}
+            az containerapp registry set -n pdf-service -g pdf-service-prod --server bccplatform.azurecr.io --username  ${{ secrets.PDFSERVICEAPI_REGISTRY_USERNAME }} --password ${{ secrets.PDFSERVICEAPI_REGISTRY_PASSWORD }}
+            az containerapp update -n pdf-service -g pdf-service-prod --container-name pdf-service --image bccplatform.azurecr.io/pdf-service:${{ github.sha }}
+            az containerapp update -n pdf-service -g pdf-service-prod --container-name pdf-service-proxy --image bccplatform.azurecr.io/pdf-service-proxy:${{ github.sha }}
