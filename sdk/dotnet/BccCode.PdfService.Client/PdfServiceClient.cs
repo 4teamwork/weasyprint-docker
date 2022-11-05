@@ -18,26 +18,25 @@ namespace BccCode.PdfService.Client
             _fileProvider = fileProvider;
         }
 
-        public async Task GeneratePdfToFileAsync(string outputFilename, string html, string css, params string[] attachments)
+        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, params string[] attachmentFilenames)
         {
             var fileInfo = _fileProvider.GetFileInfo(outputFilename);
             using (FileStream writer = File.Create(fileInfo.PhysicalPath))
             {
-                var inputStream = await GeneratePdfAsync(html, css, attachments);
+                var inputStream = await GeneratePdfAsync(html, css, attachmentFilenames);
                 inputStream.Position = 0;
                 await inputStream.CopyToAsync(writer);
                 writer.Close();
                 inputStream.Close();
+                return fileInfo.PhysicalPath;
             }
         }
 
 
-        public async Task<Stream> GeneratePdfAsync(string html, string css, params string[] attachments)
+        public async Task<Stream> GeneratePdfAsync(string html, string css, params string[] attachmentFilenames)
         {
-            var client = new HttpClient
-            {
-                BaseAddress = new Uri(_options.BaseUrl)
-            };
+            var client = _clientFactory.CreateClient();
+            client.BaseAddress = new Uri(_options.BaseUrl);
 
             var streams = new List<Stream>();
             using var htmlStream = ReadStringToStream(html);
@@ -52,9 +51,9 @@ namespace BccCode.PdfService.Client
                 streams.Add(cssStream);
                 content.Add(new StreamContent(cssStream), "css", "style.css");
             }
-            if (attachments != null)
+            if (attachmentFilenames != null)
             {
-                foreach (var attachment in attachments)
+                foreach (var attachment in attachmentFilenames)
                 {
                     var file = _fileProvider.GetFileInfo(attachment);
                     if (file.Exists)
@@ -69,7 +68,6 @@ namespace BccCode.PdfService.Client
                     }
                 }
             }
-
            
 
             request.Content = content;
@@ -77,21 +75,27 @@ namespace BccCode.PdfService.Client
             // Send request
             var result = await client.SendAsync(request);
 
-            // Close streams
-            streams.ForEach(s =>
+            try
             {
-                s.Flush();
-                s.Close();
-            });
-
-            if (result.IsSuccessStatusCode)
-            {
-                return await result.Content.ReadAsStreamAsync();
+                if (result.IsSuccessStatusCode)
+                {
+                    return await result.Content.ReadAsStreamAsync();
+                }
+                else
+                {
+                    var errorResponse = await result.Content.ReadAsStringAsync();
+                    throw new Exception($"Failed to generate PDF. Service returned http status {result.StatusCode}. Content: {errorResponse ?? ""}");
+                }
             }
-            else
+            finally
             {
-                var errorResponse = await result.Content.ReadAsStringAsync();
-                throw new Exception($"Failed to generate PDF. Service returned http status {result.StatusCode}. Content: {errorResponse ?? ""}");
+                // Close streams
+                streams.ForEach(s =>
+                {
+                    s.Flush();
+                    s.Close();
+                });
+
             }
         }
 

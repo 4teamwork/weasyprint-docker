@@ -1,5 +1,10 @@
-﻿body {
+﻿@page {
+    size: A4;
+    margin: 0cm
+}
+
+body {
     background: #333333;
     color: white;
-    margin: 0;
+    margin: 1cm;
 }

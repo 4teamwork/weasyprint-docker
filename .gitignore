@@ -8,3 +8,6 @@ __pycache__
 /sdk/dotnet/BccCode.PdfService.Client/obj
 /sdk/dotnet/BccCode.PdfService.Client.Tests/bin/Debug/net6.0
 /sdk/dotnet/BccCode.PdfService.Client.Tests/obj
+/proxy/BccCode.PdfServer.Proxy/.vs/BccCode.PdfServer.Proxy
+/proxy/BccCode.PdfServer.Proxy/bin/Debug/net6.0
+/proxy/BccCode.PdfServer.Proxy/obj

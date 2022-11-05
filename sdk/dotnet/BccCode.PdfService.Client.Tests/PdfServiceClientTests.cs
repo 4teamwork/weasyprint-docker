@@ -9,11 +9,16 @@ namespace BccCode.PdfService.Client.Tests
         {
             var options = new PdfServiceOptions
             {
-                BaseUrl = "https://pdf-service-api.kindsea-6f2fe326.westeurope.azurecontainerapps.io"
+                BaseUrl = ""
             };
             var client = new PdfServiceClient(options, new DummyHttpClientFactory(), new PhysicalFileProvider(Directory.GetCurrentDirectory()));
             var css = await File.ReadAllTextAsync("assets/style.css");
-            await client.GeneratePdfToFileAsync("output2.pdf", "<html><body><h1>TEST</h1><p>Welcome</p><img src=\"test.jpg\"></body></html>", css, "assets/test.jpg");
+            var tasks = new List<Task>();
+            for (int i = 0; i < 50; i++)
+            {
+                tasks.Add( client.GeneratePdfToFileAsync($"output{i}.pdf", $"<html><body><h1>TEST {i}</h1><p>Welcome</p><img src=\"test.jpg\"><img src=\"https://bcc.no/wp-content/themes/bcc-forbund/logo.svg\"></body></html>", css, "assets/test.jpg"));
+            }
+            await Task.WhenAll(tasks);
         }
 
         public class DummyHttpClientFactory : IHttpClientFactory
