@@ -20,14 +20,22 @@ namespace BccCode.PdfService.Client
 
         public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, params string[] attachmentFilenames)
         {
+            if (outputFilename.Contains("/"))
+            {
+                var directory = _fileProvider.GetFileInfo(Path.GetDirectoryName(outputFilename));
+                if (!directory.Exists)
+                {
+                    Directory.CreateDirectory(directory.PhysicalPath);
+                }
+            }
+
             var fileInfo = _fileProvider.GetFileInfo(outputFilename);
+
+            using var inputStream = await GeneratePdfAsync(html, css, attachmentFilenames);
             using (FileStream writer = File.Create(fileInfo.PhysicalPath))
             {
-                var inputStream = await GeneratePdfAsync(html, css, attachmentFilenames);
                 inputStream.Position = 0;
                 await inputStream.CopyToAsync(writer);
-                writer.Close();
-                inputStream.Close();
                 return fileInfo.PhysicalPath;
             }
         }
@@ -38,45 +46,38 @@ namespace BccCode.PdfService.Client
             var client = _clientFactory.CreateClient();
             client.BaseAddress = new Uri(_options.BaseUrl);
 
-            var streams = new List<Stream>();
-            using var htmlStream = ReadStringToStream(html);
-            using var request = new HttpRequestMessage(HttpMethod.Post, "");
-            using var content = new MultipartFormDataContent()
-            {
-                { new StreamContent(htmlStream), "html", "input.html" }                    
-            };
-            if (!string.IsNullOrEmpty(css))
-            {
-                var cssStream = ReadStringToStream(css);
-                streams.Add(cssStream);
-                content.Add(new StreamContent(cssStream), "css", "style.css");
-            }
-            if (attachmentFilenames != null)
-            {
-                foreach (var attachment in attachmentFilenames)
-                {
-                    var file = _fileProvider.GetFileInfo(attachment);
-                    if (file.Exists)
-                    {
-                        var fileStream = await ReadFileToStreamAsync(file);
-                        streams.Add(fileStream);
-                        content.Add(new StreamContent(fileStream), $"attachment.{file.Name}", file.Name);
-                    }
-                    else
-                    {
-                        throw new Exception($"Attachment {file.Name} does not exist.");
-                    }
-                }
-            }
-           
-
-            request.Content = content;
-
-            // Send request
-            var result = await client.SendAsync(request);
-
+            var attempts = 0;
+            retry:
             try
             {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "");
+                using var content = new MultipartFormDataContent();
+                content.Add(new StreamContent(ReadStringToStream(html)), "html", "input.html");
+                if (!string.IsNullOrEmpty(css))
+                {
+                    content.Add(new StreamContent(ReadStringToStream(css)), "css", "style.css");
+                }
+                if (attachmentFilenames != null)
+                {
+                    foreach (var attachment in attachmentFilenames)
+                    {
+                        var file = _fileProvider.GetFileInfo(attachment);
+                        if (file.Exists)
+                        {
+                            content.Add(new StreamContent(await ReadFileToStreamAsync(file)), $"attachment.{file.Name}", file.Name);
+                        }
+                        else
+                        {
+                            throw new Exception($"Attachment {file.Name} does not exist.");
+                        }
+                    }
+                }
+
+                request.Content = content;
+
+                // Send request
+                var result = await client.SendAsync(request);
+
                 if (result.IsSuccessStatusCode)
                 {
                     return await result.Content.ReadAsStreamAsync();
@@ -87,19 +88,18 @@ namespace BccCode.PdfService.Client
                     throw new Exception($"Failed to generate PDF. Service returned http status {result.StatusCode}. Content: {errorResponse ?? ""}");
                 }
             }
-            finally
+            catch
             {
-                // Close streams
-                streams.ForEach(s =>
+                attempts++;
+                if (attempts < 5)
                 {
-                    s.Flush();
-                    s.Close();
-                });
-
+                    await Task.Delay(1000);
+                    goto retry;
+                }
+                throw;
             }
-        }
 
-        // ref: https://stackoverflow.com/questions/16906711/httpclient-how-to-upload-multiple-files-at-once
+        }
 
         private Stream ReadStringToStream(string str)
         {
