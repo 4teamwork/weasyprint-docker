@@ -16,7 +16,7 @@ namespace BccCode.PdfService.Client
 
         public string TokenEndpoint { get; set; } = "/oauth/token";
 
-        public string Audience { get; set; } = "pdf-service.bcc.no";
+        public string Audience { get; set; } = "api.bcc.no";
         
         public string ClientId { get; set; } = ""; 
 

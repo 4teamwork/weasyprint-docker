@@ -12,9 +12,10 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddPdfService(this IServiceCollection services, PdfServiceOptions options)
         {
-            return services.AddPdfService(options, null);
+            return services.AddPdfService(options, (c) => c.GetService<IFileProvider>());
         }
-        public static IServiceCollection AddPdfService(this IServiceCollection services, PdfServiceOptions options, IFileProvider fileProvider)
+
+        public static IServiceCollection AddPdfService(this IServiceCollection services, PdfServiceOptions options, Func<IServiceProvider,IFileProvider?> fileProviderFactory)
         {
             if (!services.Any(x => x.ServiceType == typeof(IHttpClientFactory)))
             {
@@ -24,8 +25,9 @@ namespace Microsoft.Extensions.DependencyInjection
             return services.AddSingleton<IPdfServiceClient>(x =>
             {
                 var clientFactory = x.GetRequiredService<IHttpClientFactory>();
-                var fp = fileProvider ?? x.GetService<IFileProvider>();
-                return fp != null ? new PdfServiceClient(options, fp) : new PdfServiceClient(options);
+                var fp = fileProviderFactory != null ? fileProviderFactory(x) : x.GetService<IFileProvider>();
+                var client = fp != null ? new PdfServiceClient(options, fp) : new PdfServiceClient(options);
+                return client;
             });
         }
 

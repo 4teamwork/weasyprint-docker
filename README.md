@@ -1,33 +1,109 @@
 # PDF Server
 
-An API for generating PDF files.
+An web service for generating PDF files from HTML.  
 
-The API is based on a fork from https://github.com/4teamwork/weasyprint-docker (based on WeasyPrint)
+The service is based on a fork from https://github.com/4teamwork/weasyprint-docker (based on [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html))
 
-## Description
+## Raw Usage
 
-[WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html)
-is a visual rendering engine for HTML and CSS that can export to PDF.
-It aims to support web standards for printing.
+To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://pdf-service.kindsea-6f2fe326.westeurope.azurecontainerapps.io 
 
-This web service exposes an endpoint for uploading a html file, an optional css
-file and optional attachments. It responds with the generated PDF.
+The request should contain the following parts:
 
-The web service is written in Python using the aiohttp web server.
+* `html` - main HTML content
+* `css` - (optional) stylesheet content
+* `file.*` - (optional) additional attachments such as images. Name must start with `file.` or `attachment.`
 
-## Usage
+The request must have an `Authorization Header` containing a JWT bearer with the following claims:
 
-To start the webservice just run
+* `issuer`: https://login.bcc.no
+* `aud`: api.bcc.no
+* `scope`: pdf#read
+
+## .Net SDK
+
+To generate PDFs in a .Net application, add the `BccCode.PdfService.Client` nuget package.
+
+The `IPdfServiceClient` service can be added to the applications services during startup (startup.cs or program.cs) using the following code (.net 6):
+
+```csharp
+using BccCode.PdfService.Client;
+
+\\ ...
+
+builder.Services.AddPdfService(new PdfServiceOptions
+{
+    BaseUrl = "https://pdf-service.kindsea-6f2fe326.westeurope.azurecontainerapps.io",
+    Authority = "https://login.bcc.no",
+    ClientId = "[YOUR CLIENT ID]",
+    ClientSecret = "[YOUR CLIENT SECRET]",
+}, (services) => new PhysicalFileProvider(Directory.GetCurrentDirectory()));
+
 ```
-docker-compose up
+
+Note that the file provider is only required if you intend to persist the generated PDFs or need to upload attachments from storage. Any provider that implements IFileProvider may be passed to the service.  
+
+In order to use the service to generate a PDF:
+
+```csharp
+using BccCode.PdfService.Client;
+
+\\ ...
+
+public class PdfGenerator
+{
+    // PDF Service provided by application services (DI)
+    public PdfGenerator(IPdfService pdfService)
+    {
+        _pdfService = pdfService;
+    }
+
+    private readonly IPdfService _pdfService;
+
+    // Save PDF to file
+    public async Task GenerateMyPdfFileAsync()
+    {
+        var html = "<html><body><h1>Hello world!</h1></body></html>";
+        var css = @"
+            @page {
+                size: A4;
+                margin: 0cm
+            }
+
+            body {
+                background: #333333;
+                color: white;
+                margin: 1cm;
+            }        
+        ";
+
+        var outputFilePath = await client.GeneratePdfToFileAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
+
+        // ...
+
+    }
+
+    // Get bytes from stream
+    public async Task<byte[]> GenerateMyPdfInMemoryAsync()
+    {
+        var html = "<html><body><h1>Hello world!</h1></body></html>";
+        var css = @"...";
+
+        using var stream = await client.GeneratePdfAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
+        using (MemoryStream ms = new MemoryStream())
+        {
+            await stream.CopyToAsync(ms);
+            return ms.ToArray();
+        }
+    }
+}
+
 ```
 
-The html file and and any additional files must be uploaded as multipart/form-data
-with a part named `html` containing the main HTML content. Additional files
-have to be in parts with names that start with the preifx `file.`.
+## Service Deployment
 
-Example:
+The service runs as an Azure Container App containing two containers:
 
-```
-curl -F "html=@tests/test.html" http://localhost:3000 -o test.pdf
-```
+1. Ingress service [Reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
+
+2. [Weasyprint server](server.py) - python web service which passes requests to the weasyprint library for processing. This container runs as a sidecar on port 8080
