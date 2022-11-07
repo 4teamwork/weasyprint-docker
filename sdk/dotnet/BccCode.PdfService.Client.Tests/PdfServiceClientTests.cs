@@ -18,7 +18,7 @@ namespace BccCode.PdfService.Client.Tests
             {
                 //if (i % 5 == 0)
                 //{
-                    tasks.Add(client.GeneratePdfToFileAsync($"files/output{i}.pdf", $"<html><body><h1>PDF {i}</h1><p>Welcome</p><img src=\"test.jpg\"></body></html>", css, "assets/test.jpg"));
+                tasks.Add(client.GeneratePdfToFileAsync($"files/output{i}.pdf", $"<html><body><h1>PDF {i}</h1><p>Welcome</p><img src=\"test.jpg\"></body></html>", css, new[] { "assets/test.jpg" }));
                 //} 
                 //else
                 //{

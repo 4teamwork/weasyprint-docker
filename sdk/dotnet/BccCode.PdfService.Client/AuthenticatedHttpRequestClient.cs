@@ -153,6 +153,7 @@ namespace BccCode.PdfService.Client
             }
             else
             {
+                var content = await response.Content.ReadAsStringAsync();
                 throw new HttpRequestException($"Failed to retrieve data from {request.RequestUri}. Status code: {response.StatusCode}. Content: {content ?? ""}", null, response.StatusCode);
             }
         }
