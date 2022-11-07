@@ -8,9 +8,9 @@ namespace BccCode.PdfService.Client
 {
     public class PdfServiceOptions
     {
-        public string BaseUrl { get; set; }
+        public string BaseUrl { get; set; } = "";
 
-        public string Authority { get; set; }
+        public string Authority { get; set; } = "";
 
         public string Scope { get; set; } = PdfServiceScope.Create;
 
@@ -18,9 +18,9 @@ namespace BccCode.PdfService.Client
 
         public string Audience { get; set; } = "pdf-service.bcc.no";
         
-        public string ClientId { get; set; }
+        public string ClientId { get; set; } = ""; 
 
-        public string ClientSecret { get; set; }
+        public string ClientSecret { get; set; } = "";
 
     }
 }
