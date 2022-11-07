@@ -11,6 +11,7 @@ var routes = new[]
     {
         RouteId = "route1",
         ClusterId = "cluster1",
+        AuthorizationPolicy = "Default",
         Match = new RouteMatch { Path = "{**catch-all}" }
     }
 };
@@ -62,12 +63,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapReverseProxy(proxy =>
 {
-    
+
 });
 
 app.Run();
