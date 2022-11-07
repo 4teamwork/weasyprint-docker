@@ -20,8 +20,11 @@ jobs:
         dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: sdk/dotnet/BccCode.PdfService.Client    
+    
     - name: Build
       run: dotnet build --no-restore
+      working-directory: sdk/dotnet/BccCode.PdfService.Client
     # - name: Test
     #   run: dotnet test --no-build --verbosity normal
     - name: Publish Nuget Package
