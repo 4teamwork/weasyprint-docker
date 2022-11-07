@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,23 @@ var clusters = new[]
 };
 
 // Add services to the container.
+builder.Services.AddAuthorization(c =>
+{
+    c.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .RequireClaim("scope", "pdf#create")
+        .Build();
+});
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, c =>
+     {
+         c.Authority = $"{builder.Configuration["Auth:Authority"]}";
+         c.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+         {
+             ValidAudiences = builder.Configuration["Auth:Audiences"].Split(','),
+             ValidIssuer = $"{builder.Configuration["Auth:Authority"]}".Replace("https://","").TrimEnd('/')
+         };
+     });
+
 builder.Services.AddControllers();
 builder.Services.AddReverseProxy().LoadFromMemory(routes, clusters);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
