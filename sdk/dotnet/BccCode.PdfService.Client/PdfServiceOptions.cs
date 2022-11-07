@@ -12,7 +12,7 @@ namespace BccCode.PdfService.Client
 
         public string Authority { get; set; }
 
-        public PdfServiceScope Scope { get; set; } = "pdf#create";
+        public string Scope { get; set; } = PdfServiceScope.Create;
 
         public string TokenEndpoint { get; set; } = "/oauth/token";
 

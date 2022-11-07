@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace BccCode.PdfService.Client
 {
-    internal class ApiHttpClient
+    internal class AuthenticatedHttpRequestClient
     {
         internal readonly IHttpClientFactory _clientFactory;
         internal readonly PdfServiceOptions _options;
 
         internal static JsonSerializerSettings _serializerSettings;
 
-        static ApiHttpClient()
+        static AuthenticatedHttpRequestClient()
         {
             var contractResolver = new DefaultContractResolver
             {
@@ -36,13 +36,13 @@ namespace BccCode.PdfService.Client
             });
 
         }
-        public ApiHttpClient(PdfServiceOptions options, IHttpClientFactory clientFactory)
+        public AuthenticatedHttpRequestClient(PdfServiceOptions options, IHttpClientFactory clientFactory)
         {
             this._clientFactory = clientFactory;
             this._options = options;
         }
 
-        internal ApiHttpClient(PdfServiceOptions options)
+        internal AuthenticatedHttpRequestClient(PdfServiceOptions options)
         {
             this._clientFactory = new TransientHttpClientFactory();
             this._options = options;
@@ -143,7 +143,7 @@ namespace BccCode.PdfService.Client
             return client;
         }
 
-        public async Task<HttpResponseMessage> SendAsync<TResponse>(HttpRequestMessage request, CancellationToken cancellationToken = default)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             var client = await CreateClient();
             var response = await client.SendAsync(request, cancellationToken);

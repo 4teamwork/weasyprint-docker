@@ -13,3 +13,4 @@ __pycache__
 /proxy/BccCode.PdfServer.Proxy/obj
 /proxy/BccCode.PdfServer.Proxy/Properties/serviceDependencies.local.json.user
 /sdk/dotnet/BccCode.PdfService.Client/.vs/ProjectEvaluation
+/.vs
