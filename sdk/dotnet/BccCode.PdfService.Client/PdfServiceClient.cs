@@ -2,52 +2,80 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 
 namespace BccCode.PdfService.Client
 {
-    public class PdfServiceClient
+    public class PdfServiceClient : IPdfServiceClient
     {
         private readonly PdfServiceOptions _options;
-        private readonly IHttpClientFactory _clientFactory;
-        private readonly IFileProvider _fileProvider;
+        private readonly AuthenticatedHttpRequestClient _client;
+        private readonly IFileProvider? _fileProvider;
 
         public PdfServiceClient(PdfServiceOptions options, IHttpClientFactory clientFactory, IFileProvider fileProvider)
         {
             _options = options;
-            _clientFactory = clientFactory;
+            _client = new AuthenticatedHttpRequestClient(options, clientFactory);
             _fileProvider = fileProvider;
         }
 
-        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, params string[] attachmentFilenames)
+        public PdfServiceClient(PdfServiceOptions options, IFileProvider fileProvider)
         {
-            if (outputFilename.Contains("/"))
+            _options = options;
+            _client = new AuthenticatedHttpRequestClient(options);
+            _fileProvider = fileProvider;
+        }
+
+        public PdfServiceClient(PdfServiceOptions options)
+        {
+            _options = options;
+            _client = new AuthenticatedHttpRequestClient(options);
+        }
+
+        public Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css = "", CancellationToken cancellationToken = default)
+        {
+            return GeneratePdfToFileAsync(outputFilename, html, css, new string[] { }, cancellationToken);
+        }
+
+        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, IEnumerable<string> attachmentFilenames, CancellationToken cancellationToken = default)
+        {
+            if (_fileProvider == null)
             {
-                var directory = _fileProvider.GetFileInfo(Path.GetDirectoryName(outputFilename));
-                if (!directory.Exists)
-                {
-                    Directory.CreateDirectory(directory.PhysicalPath);
-                }
+                throw new Exception("IFileProvider service must be provided to PdfService client in order to save PDFs to file.");
             }
-
-            var fileInfo = _fileProvider.GetFileInfo(outputFilename);
-
-            using var inputStream = await GeneratePdfAsync(html, css, attachmentFilenames);
-            using (FileStream writer = File.Create(fileInfo.PhysicalPath))
+            else
             {
-                inputStream.Position = 0;
-                await inputStream.CopyToAsync(writer);
-                return fileInfo.PhysicalPath;
+
+                if (outputFilename.Contains("/"))
+                {
+                    var directory = _fileProvider.GetFileInfo(Path.GetDirectoryName(outputFilename));
+                    if (!directory.Exists)
+                    {
+                        Directory.CreateDirectory(directory.PhysicalPath);
+                    }
+                }
+
+                var fileInfo = _fileProvider.GetFileInfo(outputFilename);
+
+                using var inputStream = await GeneratePdfAsync(html, css, attachmentFilenames, cancellationToken);
+                using (FileStream writer = File.Create(fileInfo.PhysicalPath))
+                {
+                    inputStream.Position = 0;
+                    await inputStream.CopyToAsync(writer);
+                    return fileInfo.PhysicalPath;
+                }
             }
         }
 
-
-        public async Task<Stream> GeneratePdfAsync(string html, string css, params string[] attachmentFilenames)
+        public Task<Stream> GeneratePdfAsync(string html, string css = "", CancellationToken cancellationToken = default)
         {
-            var client = _clientFactory.CreateClient();
-            client.BaseAddress = new Uri(_options.BaseUrl);
+            return GeneratePdfAsync(html, css, new string[] { }, cancellationToken);
+        }
 
+        public async Task<Stream> GeneratePdfAsync(string html, string css, IEnumerable<string> attachmentFilenames, CancellationToken cancellationToken = default)
+        {
             var attempts = 0;
-            retry:
+        retry:
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post, "");
@@ -59,16 +87,23 @@ namespace BccCode.PdfService.Client
                 }
                 if (attachmentFilenames != null)
                 {
-                    foreach (var attachment in attachmentFilenames)
+                    if (_fileProvider == null)
                     {
-                        var file = _fileProvider.GetFileInfo(attachment);
-                        if (file.Exists)
+                        throw new Exception("IFileProvider service must be provided to PdfService client in order to read attachments from file.");
+                    }
+                    else
+                    {
+                        foreach (var attachment in attachmentFilenames)
                         {
-                            content.Add(new StreamContent(await ReadFileToStreamAsync(file)), $"attachment.{file.Name}", file.Name);
-                        }
-                        else
-                        {
-                            throw new Exception($"Attachment {file.Name} does not exist.");
+                            var file = _fileProvider.GetFileInfo(attachment);
+                            if (file.Exists)
+                            {
+                                content.Add(new StreamContent(await ReadFileToStreamAsync(file)), $"attachment.{file.Name}", file.Name);
+                            }
+                            else
+                            {
+                                throw new Exception($"Attachment {file.Name} does not exist.");
+                            }
                         }
                     }
                 }
@@ -76,7 +111,7 @@ namespace BccCode.PdfService.Client
                 request.Content = content;
 
                 // Send request
-                var result = await client.SendAsync(request);
+                var result = await _client.SendAsync(request, cancellationToken);
 
                 if (result.IsSuccessStatusCode)
                 {

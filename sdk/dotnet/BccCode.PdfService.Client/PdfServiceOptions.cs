@@ -9,5 +9,18 @@ namespace BccCode.PdfService.Client
     public class PdfServiceOptions
     {
         public string BaseUrl { get; set; }
+
+        public string Authority { get; set; }
+
+        public PdfServiceScope Scope { get; set; } = "pdf#create";
+
+        public string TokenEndpoint { get; set; } = "/oauth/token";
+
+        public string Audience { get; set; } = "pdf-service.bcc.no";
+        
+        public string ClientId { get; set; }
+
+        public string ClientSecret { get; set; }
+
     }
 }
