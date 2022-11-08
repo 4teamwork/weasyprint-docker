@@ -104,6 +104,6 @@ public class PdfGenerator
 
 The service runs as an Azure Container App containing two containers:
 
-1. Ingress service [Reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
+1. Ingress [reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
 
 2. [Weasyprint server](server.py) - python web service which passes requests to the weasyprint library for processing. This container runs as a sidecar on port 8080
