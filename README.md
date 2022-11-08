@@ -1,8 +1,8 @@
 # PDF Service
 
-An web service for generating PDF files from HTML.  
+A web service for generating PDF files from HTML.  
 
-The service is based on a fork from https://github.com/4teamwork/weasyprint-docker (based on [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html))
+The service is based on a fork from https://github.com/4teamwork/weasyprint-docker which uses [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html).
 
 ## Raw Usage
 
