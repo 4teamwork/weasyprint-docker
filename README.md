@@ -1,4 +1,4 @@
-# PDF Server
+# PDF Service
 
 An web service for generating PDF files from HTML.  
 
