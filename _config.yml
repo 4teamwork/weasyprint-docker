@@ -1,0 +1,23 @@
+remote_theme: bcc-code/bcc-docs-theme
+plugins:
+- jekyll-remote-theme
+
+collections:
+  products:
+    output: false
+  docs:
+    output: false
+  guides:
+    output: false
+  topics:
+    output: false
+  plugins:
+    output: false
+  apis:
+    output: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"

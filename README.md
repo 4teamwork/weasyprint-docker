@@ -1,8 +1,8 @@
-# PDF Server
+# PDF Service
 
-An web service for generating PDF files from HTML.  
+A web service for generating PDF files from HTML.  
 
-The service is based on a fork from https://github.com/4teamwork/weasyprint-docker (based on [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html))
+The service is based on a fork from https://github.com/4teamwork/weasyprint-docker which uses [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html).
 
 ## Raw Usage
 
@@ -104,6 +104,6 @@ public class PdfGenerator
 
 The service runs as an Azure Container App containing two containers:
 
-1. Ingress service [Reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
+1. Ingress [reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
 
 2. [Weasyprint server](server.py) - python web service which passes requests to the weasyprint library for processing. This container runs as a sidecar on port 8080
