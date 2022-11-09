@@ -37,7 +37,7 @@ namespace BccCode.PdfService.Client
             return GeneratePdfToFileAsync(outputFilename, html, css, new string[] { }, cancellationToken);
         }
 
-        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, IEnumerable<string>? attachmentFilenames, CancellationToken cancellationToken = default)
+        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, IList<string>? attachmentFilenames, CancellationToken cancellationToken = default)
         {
             if (_fileProvider == null)
             {
@@ -72,7 +72,7 @@ namespace BccCode.PdfService.Client
             return GeneratePdfAsync(html, css, new string[] { }, cancellationToken);
         }
 
-        public async Task<Stream> GeneratePdfAsync(string html, string css, IEnumerable<string>? attachmentFilenames, CancellationToken cancellationToken = default)
+        public async Task<Stream> GeneratePdfAsync(string html, string css, IList<string>? attachmentFilenames, CancellationToken cancellationToken = default)
         {
             var attempts = 0;
         retry:
@@ -85,7 +85,7 @@ namespace BccCode.PdfService.Client
                 {
                     content.Add(new StreamContent(ReadStringToStream(css)), "css", "style.css");
                 }
-                if (attachmentFilenames != null)
+                if (attachmentFilenames?.Any() ?? false)
                 {
                     if (_fileProvider == null)
                     {
