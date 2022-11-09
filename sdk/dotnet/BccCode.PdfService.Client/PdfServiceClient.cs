@@ -37,7 +37,7 @@ namespace BccCode.PdfService.Client
             return GeneratePdfToFileAsync(outputFilename, html, css, new string[] { }, cancellationToken);
         }
 
-        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, IEnumerable<string> attachmentFilenames, CancellationToken cancellationToken = default)
+        public async Task<string> GeneratePdfToFileAsync(string outputFilename, string html, string css, IList<string>? attachmentFilenames, CancellationToken cancellationToken = default)
         {
             if (_fileProvider == null)
             {
@@ -61,7 +61,7 @@ namespace BccCode.PdfService.Client
                 using (FileStream writer = File.Create(fileInfo.PhysicalPath))
                 {
                     inputStream.Position = 0;
-                    await inputStream.CopyToAsync(writer);
+                    await inputStream.CopyToAsync(writer, cancellationToken);
                     return fileInfo.PhysicalPath;
                 }
             }
@@ -72,7 +72,7 @@ namespace BccCode.PdfService.Client
             return GeneratePdfAsync(html, css, new string[] { }, cancellationToken);
         }
 
-        public async Task<Stream> GeneratePdfAsync(string html, string css, IEnumerable<string> attachmentFilenames, CancellationToken cancellationToken = default)
+        public async Task<Stream> GeneratePdfAsync(string html, string css, IList<string>? attachmentFilenames, CancellationToken cancellationToken = default)
         {
             var attempts = 0;
         retry:
@@ -85,7 +85,7 @@ namespace BccCode.PdfService.Client
                 {
                     content.Add(new StreamContent(ReadStringToStream(css)), "css", "style.css");
                 }
-                if (attachmentFilenames != null)
+                if (attachmentFilenames?.Any() ?? false)
                 {
                     if (_fileProvider == null)
                     {
@@ -115,11 +115,11 @@ namespace BccCode.PdfService.Client
 
                 if (result.IsSuccessStatusCode)
                 {
-                    return await result.Content.ReadAsStreamAsync();
+                    return await result.Content.ReadAsStreamAsync(cancellationToken);
                 }
                 else
                 {
-                    var errorResponse = await result.Content.ReadAsStringAsync();
+                    var errorResponse = await result.Content.ReadAsStringAsync(cancellationToken);
                     throw new Exception($"Failed to generate PDF. Service returned http status {result.StatusCode}. Content: {errorResponse ?? ""}");
                 }
             }
@@ -128,7 +128,7 @@ namespace BccCode.PdfService.Client
                 attempts++;
                 if (attempts < 5)
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(1000, cancellationToken);
                     goto retry;
                 }
                 throw;

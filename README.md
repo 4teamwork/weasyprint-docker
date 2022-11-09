@@ -53,12 +53,12 @@ using BccCode.PdfService.Client;
 public class PdfGenerator
 {
     // PDF Service provided by application services (DI)
-    public PdfGenerator(IPdfService pdfService)
+    public PdfGenerator(IPdfServiceClient pdfServiceClient)
     {
-        _pdfService = pdfService;
+        _client = pdfServiceClient;
     }
 
-    private readonly IPdfService _pdfService;
+    private readonly IPdfServiceClient _client;
 
     // Save PDF to file
     public async Task GenerateMyPdfFileAsync()
@@ -77,7 +77,7 @@ public class PdfGenerator
             }        
         ";
 
-        var outputFilePath = await client.GeneratePdfToFileAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
+        var outputFilePath = await _client.GeneratePdfToFileAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
 
         // ...
 
@@ -89,7 +89,7 @@ public class PdfGenerator
         var html = "<html><body><h1>Hello world!</h1></body></html>";
         var css = @"...";
 
-        using var stream = await client.GeneratePdfAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
+        using var stream = await _client.GeneratePdfAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
         using (MemoryStream ms = new MemoryStream())
         {
             await stream.CopyToAsync(ms);
