@@ -67,8 +67,30 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+bool started = false;
 app.MapReverseProxy(proxy =>
 {
+    proxy.Use(async (context, next) =>
+    {
+        retry:
+        await next();
+
+        var errorFeature = context.GetForwarderErrorFeature();
+        if (errorFeature is not null)
+        {
+            if (errorFeature.Exception != null)
+            {
+                // Introduce startup delay if error occurs on first request (underlying service may not have started)
+                if (!started)
+                {
+                    await Task.Delay(5000);
+                    goto retry;
+                }
+            }
+        }
+        started = true;
+    });
 
 });
 
