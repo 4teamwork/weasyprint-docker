@@ -90,7 +90,7 @@ namespace BccCode.PdfService.Client
                 if (response.IsSuccessStatusCode)
                 {
                     var result = JsonConvert.DeserializeAnonymousType(content, new { access_token = "", token_type = "" });
-                    if (!string.IsNullOrEmpty(result.access_token) && result.access_token.Contains('.'))
+                    if (!string.IsNullOrEmpty(result?.access_token) && result.access_token.Contains('.'))
                     {
                         // Determine token expiry
                         var base64Payload = result.access_token.Split('.')[1];
@@ -104,24 +104,27 @@ namespace BccCode.PdfService.Client
                                         Encoding.UTF8.GetString(Convert.FromBase64String(base64Payload)),
                                         new { exp = 0 }
                                       );
-                        var expiry = DateTimeOffset.FromUnixTimeSeconds(payload.exp);
-
-                        // 10% time buffer
-                        var buffer = TimeSpan.FromSeconds((expiry - DateTimeOffset.Now).TotalSeconds / 10);
-                        expiry = expiry - buffer;
-
-                        if (expiry > DateTimeOffset.Now)
+                        if (payload != null)
                         {
-                            // Save token to cache
-                            _tokens[tokenKey] = (expiry, result.access_token);
-                            return result.access_token;
+                            var expiry = DateTimeOffset.FromUnixTimeSeconds(payload.exp);
+
+                            // 10% time buffer
+                            var buffer = TimeSpan.FromSeconds((expiry - DateTimeOffset.Now).TotalSeconds / 10);
+                            expiry = expiry - buffer;
+
+                            if (expiry > DateTimeOffset.Now)
+                            {
+                                // Save token to cache
+                                _tokens[tokenKey] = (expiry, result.access_token);
+                                return result.access_token;
+                            }
                         }
                     }
                 }
                 if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     var error = JsonConvert.DeserializeAnonymousType(content, new { error = "", error_description = "" });
-                    throw new UnauthorizedException($"Failed to retreive valid access token from authentication server. {error.error_description}");
+                    throw new UnauthorizedException($"Failed to retreive valid access token from authentication server. {error?.error_description}");
                 }
                 throw new UnauthorizedException("Failed to retreive valid access token from authentication server.");
             }
