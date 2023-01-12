@@ -26,7 +26,6 @@ jobs:
       - name: Build documentation site
         uses: bcc-code/bcc-documentation-base@v1
         with:
-          docs-dir: /
           title: PDF Service
           description: ${{ github.event.repository.description }}
         
