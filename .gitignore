@@ -16,3 +16,4 @@ __pycache__
 /.vs
 /sdk/dotnet/BccCode.PdfService.Client/bin/Debug
 .idea/
+.vscode/
