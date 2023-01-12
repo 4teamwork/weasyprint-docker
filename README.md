@@ -6,7 +6,7 @@ The service is based on a fork from https://github.com/4teamwork/weasyprint-dock
 
 ## Raw Usage
 
-To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://pdf-service.kindsea-6f2fe326.westeurope.azurecontainerapps.io 
+To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://api.bcc.no/pdf 
 
 The request should contain the following parts:
 
