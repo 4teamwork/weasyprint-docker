@@ -28,6 +28,7 @@ jobs:
         with:
           title: PDF Service
           description: ${{ github.event.repository.description }}
+          branch: master
         
   deploy:
     environment:
