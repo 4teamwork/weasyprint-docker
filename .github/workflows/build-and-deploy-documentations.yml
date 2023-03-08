@@ -1,4 +1,4 @@
-name: Build and Deploy to The New Documentation Site
+name: Build and Deploy to The Documentation Site
 
 on:
   # Runs on pushes to the docs folder targeting the default branch
