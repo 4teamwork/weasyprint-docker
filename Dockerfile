@@ -1,4 +1,4 @@
-FROM alpine:3.16 as pkg-builder
+FROM alpine:3.17 as pkg-builder
 
 RUN apk -U add \
     sudo \
@@ -21,13 +21,11 @@ COPY --chown=packager:packager packages/ ./
 
 RUN cd py3-pydyf && \
     abuild -r && \
-    cd ../py3-zopfli && \
-    abuild -r && \
     cd ../py3-weasyprint && \
     abuild -r
 
 
-FROM alpine:3.16
+FROM alpine:3.17
 
 RUN addgroup --system weasyprint \
      && adduser --system --ingroup weasyprint weasyprint
