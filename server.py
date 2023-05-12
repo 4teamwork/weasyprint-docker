@@ -7,9 +7,10 @@ It expects a multipart/form-data upload containing a html file, an optional
 css file and optional attachments.
 """
 from aiohttp import web
+from urllib.parse import urlparse
 from weasyprint import CSS
-from weasyprint import HTML
 from weasyprint import default_url_fetcher
+from weasyprint import HTML
 import logging
 import os.path
 import tempfile
@@ -17,6 +18,26 @@ import tempfile
 CHUNK_SIZE = 65536
 
 logger = logging.getLogger('weasyprint')
+
+
+class URLFetcher:
+    """URL fetcher that only allows data URLs and known files"""
+    def __init__(self, valid_paths):
+        self.valid_paths = valid_paths
+
+    def __call__(self, url):
+        parsed = urlparse(url)
+
+        if parsed.scheme == 'data':
+            return default_url_fetcher(url)
+
+        if parsed.scheme in ['', 'file'] and parsed.path:
+            if os.path.abspath(parsed.path) in self.valid_paths:
+                return default_url_fetcher(url)
+            else:
+                raise ValueError('Only known path allowed')
+
+        raise ValueError('External resources are not allowed')
 
 
 async def render_pdf(request):
@@ -51,9 +72,9 @@ async def render_pdf(request):
             logger.info('Bad request. No html file provided.')
             return web.Response(status=400, text="No html file provided.")
 
-        html = HTML(filename=form_data['html'], url_fetcher=url_fetcher)
+        html = HTML(filename=form_data['html'], url_fetcher=URLFetcher(form_data.values()))
         if 'css' in form_data:
-            css = CSS(filename=form_data['css'], url_fetcher=url_fetcher)
+            css = CSS(filename=form_data['css'], url_fetcher=URLFetcher(form_data.values()))
         else:
             css = CSS(string='@page { size: A4; margin: 2cm 2.5cm; }')
 
@@ -76,7 +97,7 @@ async def render_pdf(request):
 
 async def save_part_to_file(part, directory):
     filename = os.path.join(directory, part.filename)
-    with open(os.path.join(directory, filename), 'wb') as file_:
+    with open(filename, 'wb') as file_:
         while True:
             chunk = await part.read_chunk(CHUNK_SIZE)
             if not chunk:
@@ -110,13 +131,6 @@ async def stream_file(request, filename, content_type):
 
 async def healthcheck(request):
     return web.Response(status=200, text="OK")
-
-
-def url_fetcher(url):
-    if url.startswith('data:'):
-        return default_url_fetcher(url)
-
-    raise ValueError('External resources are not allowed')
 
 
 if __name__ == '__main__':

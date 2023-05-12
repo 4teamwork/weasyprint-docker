@@ -21,11 +21,12 @@ docker-compose up
 ```
 
 The html file and and any additional files must be uploaded as multipart/form-data
-with a part named `html` containing the main HTML content. Additional files
-have to be in parts with names that start with the preifx `file.`.
+with a part named `html` containing the main HTML content. Assets (e.g. images)
+that are referenced in HTML must be prefixed with `asset.`. Files that should
+be attached to the generated pdf must be prefixed with `attachment.`
 
 Example:
 
 ```
-curl -F "html=@tests/test.html" http://localhost:3000 -o test.pdf
+curl -F "html=@tests/index.html" -F "asset.universe.jpg=@tests/universe.jpg" http://localhost:3000 -o test.pdf
 ```
