@@ -9,6 +9,7 @@ css file and optional attachments.
 from aiohttp import web
 from weasyprint import CSS
 from weasyprint import HTML
+from weasyprint import default_url_fetcher
 import logging
 import os.path
 import tempfile
@@ -112,6 +113,9 @@ async def healthcheck(request):
 
 
 def url_fetcher(url):
+    if url.startswith('data:'):
+        return default_url_fetcher(url)
+
     raise ValueError('External resources are not allowed')
 
 
