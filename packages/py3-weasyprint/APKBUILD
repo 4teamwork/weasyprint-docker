@@ -4,7 +4,7 @@
 pkgname=py3-weasyprint
 #_pkgreal is used by apkbuild-pypi to find modules at PyPI
 _pkgreal=weasyprint
-pkgver=58.1
+pkgver=59.0
 pkgrel=0
 pkgdesc="The Awesome Document Factory"
 provides=""
@@ -16,9 +16,7 @@ depends="python3 py3-pydyf py3-cffi py3-html5lib py3-tinycss2 py3-cssselect2 py3
 checkdepends="ghostscript py3-pytest py3-pytest-cov py3-pytest-flake8 py3-pytest-isort py3-pytest-xdist ttf-dejavu"
 makedepends="python3-dev py3-flit-core py3-build py3-installer pango-dev"
 subpackages=""
-source="https://files.pythonhosted.org/packages/6d/65/e23a2b71b3d7c2032633ea51023640f9abb13148994adb88cd789513d304/weasyprint-58.1.tar.gz
-        test_pdf.py.patch
-       "
+source="https://files.pythonhosted.org/packages/1d/69/11343bbb46d4f2a311677058e19cc2f7bc55a769b64c547a64ea1e2b6045/weasyprint-59.0.tar.gz"
 builddir="$srcdir/$_pkgreal-$pkgver"
 
 build() {
@@ -34,6 +32,5 @@ package() {
 }
 
 sha512sums="
-75a3512ce02551c2e8247cf7982d3db683c8aef92215e5b4584ca20d5e3f6a4603c65f98e8fcf513b8aff82ebedf221da7dd243e344c9d3626eaa7907fdbd5c2  weasyprint-58.1.tar.gz
-e7c447ff291e6c270a03acf6c8d387e5f47d1df27015ba0112acdca9e0f99beb31b394334783c150b3e52c68d0ff98234a3c39aa1dfc47242a4fa7d74e459c8c  test_pdf.py.patch
+58f81a1b3e3f1315caebd08f2cb556c89cb1aa818c13310998e72c436479c1a0d10031c7792502970490e73bd6fd769c836bd4e87be384fd83179957e71496e1  weasyprint-59.0.tar.gz
 "
