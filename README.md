@@ -4,7 +4,7 @@ A dockerized web service for creating PDFs from HTML using WeasyPrint
 
 ## Description
 
-[WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html)
+[WeasyPrint](https://weasyprint.org/)
 is a visual rendering engine for HTML and CSS that can export to PDF.
 It aims to support web standards for printing.
 
