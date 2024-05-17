@@ -17,7 +17,7 @@ The web service is written in Python using the aiohttp web server.
 
 To start the webservice just run
 ```
-docker-compose up
+docker compose up
 ```
 
 The html file and and any additional files must be uploaded as multipart/form-data
