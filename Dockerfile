@@ -1,4 +1,4 @@
-FROM alpine:3.19 as pkg-builder
+FROM alpine:3.19.1 as pkg-builder
 
 RUN apk -U add \
     sudo \
@@ -25,10 +25,10 @@ RUN cd py3-pydyf && \
     abuild -r
 
 
-FROM alpine:3.19
+FROM alpine:3.19.1
 
 RUN addgroup --system weasyprint \
-     && adduser --system --ingroup weasyprint weasyprint
+    && adduser --system --ingroup weasyprint weasyprint
 
 COPY --from=pkg-builder /home/packager/packages/work/ /packages/
 COPY --from=pkg-builder /home/packager/.abuild/*.pub /etc/apk/keys/

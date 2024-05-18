@@ -4,7 +4,7 @@
 pkgname=py3-pydyf
 #_pkgreal is used by apkbuild-pypi to find modules at PyPI
 _pkgreal=pydyf
-pkgver=0.8.0
+pkgver=0.9.0
 pkgrel=0
 pkgdesc="A low-level PDF generator."
 provides=""
@@ -17,7 +17,7 @@ checkdepends="ghostscript py3-coverage py3-pillow py3-pytest py3-pytest-cov
               py3-pytest-flake8 py3-pytest-isort py3-pytest-xdist"
 makedepends="py3-flit-core py3-build py3-installer"
 subpackages=""
-source="https://files.pythonhosted.org/packages/18/dc/b607bbc7c15327c5d5ec25681a3707c847906134925d21a26ec6e7416a4a/pydyf-0.8.0.tar.gz"
+source="https://files.pythonhosted.org/packages/b5/f1/bf85e09977a5c98799337272e3675894bfb71c391f617911eca83ef2937e/pydyf-0.9.0.tar.gz"
 builddir="$srcdir/$_pkgreal-$pkgver"
 
 build() {
@@ -33,5 +33,5 @@ package() {
 }
 
 sha512sums="
-c78913e723593a4e76c36b7a9b3ddd8a85af856a967053d8f7f297901deb2c6a723e98b3ef311e1c9618018e0e727a2d8eaff1adedb52c743facb85491e8d102  pydyf-0.8.0.tar.gz
+e834026cae3782f7ac43b47bc30d21f3d1c39bcd4017823aaf01f5da4a67f924650f6e0285107d07bc63743ff4d718b3165a84c5805223305907ba3de45207a5  pydyf-0.9.0.tar.gz
 "
