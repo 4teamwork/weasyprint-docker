@@ -7,12 +7,11 @@ It expects a multipart/form-data upload containing a html file, an optional
 css file and optional attachments.
 """
 from aiohttp import web
+from re import match
 from urllib.parse import urlparse
 from weasyprint import CSS
 from weasyprint import default_url_fetcher
 from weasyprint import HTML
-from os import environ
-from re import match
 import logging
 import os.path
 import tempfile
@@ -21,18 +20,6 @@ CHUNK_SIZE = 65536
 
 logger = logging.getLogger('weasyprint')
 
-class Config:
-    def __init__(self):
-        self.items = {
-            "allowed_url_pattern": os.environ.get('ALLOWED_URL_PATTERN', False)
-        }
-
-    def get(self, name):
-        if name not in self.items:
-            raise KeyError(f'Unknown configuration variable {name}')
-        return self.items[name]
-    
-config = Config()
 
 class URLFetcher:
     """URL fetcher that only allows data URLs and known files"""
@@ -40,9 +27,11 @@ class URLFetcher:
         self.valid_paths = valid_paths
 
     def __call__(self, url):
-        if config.get('allowed_url_pattern') and match(config.get('allowed_url_pattern'), url):
-          return default_url_fetcher(url)
-    
+        if config['allowed_urls_pattern'] and match(
+            config['allowed_urls_pattern'], url
+        ):
+            return default_url_fetcher(url)
+
         parsed = urlparse(url)
 
         if parsed.scheme == 'data':
@@ -149,6 +138,15 @@ async def stream_file(request, filename, content_type):
 async def healthcheck(request):
     return web.Response(status=200, text="OK")
 
+
+def get_config():
+    config = {}
+    config['allowed_urls_pattern'] = os.environ.get(
+        'WEASYPRINT_ALLOWED_URLS_PATTERN', None)
+    return config
+
+
+config = get_config()
 
 if __name__ == '__main__':
     logging.basicConfig(
