@@ -21,6 +21,8 @@ COPY --chown=packager:packager packages/ ./
 
 RUN cd py3-pydyf && \
     abuild -r && \
+    cd ../py3-tinycss2 && \
+    abuild -r && \
     cd ../py3-weasyprint && \
     abuild -r
 
