@@ -32,10 +32,9 @@ FROM alpine:3.19.1
 RUN addgroup --system weasyprint \
     && adduser --system --ingroup weasyprint weasyprint
 
-COPY --from=pkg-builder /home/packager/packages/work/ /packages/
-COPY --from=pkg-builder /home/packager/.abuild/*.pub /etc/apk/keys/
-
-RUN apk add --no-cache --repository /packages \
+RUN --mount=from=pkg-builder,source=/home/packager/packages/work,target=/packages \
+    --mount=from=pkg-builder,source=/etc/apk/keys,target=/etc/apk/keys \
+    apk add --no-cache --repository /packages \
     font-liberation \
     font-liberation-sans-narrow \
     ttf-linux-libertine \
