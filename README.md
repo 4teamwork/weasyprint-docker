@@ -4,7 +4,7 @@ A dockerized web service for creating PDFs from HTML using WeasyPrint
 
 ## Description
 
-[WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html)
+[WeasyPrint](https://weasyprint.org)
 is a visual rendering engine for HTML and CSS that can export to PDF.
 It aims to support web standards for printing.
 
@@ -17,7 +17,7 @@ The web service is written in Python using the aiohttp web server.
 
 To start the webservice just run
 ```
-docker-compose up
+docker compose up
 ```
 
 The html file and and any additional files must be uploaded as multipart/form-data
