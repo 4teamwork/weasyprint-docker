@@ -59,6 +59,7 @@ async def render_pdf(request):
         return web.Response(status=400, text="Multipart request required.")
 
     reader = await request.multipart()
+    options = {}
 
     with tempfile.TemporaryDirectory() as temp_dir:
         while True:
@@ -73,6 +74,16 @@ async def render_pdf(request):
                 or part.name.startswith('asset.')
             ):
                 form_data[part.name] = await save_part_to_file(part, temp_dir)
+
+            if part.name.startswith('option.'):
+                input = await part.text()
+                if (input.lower() == 'false'):
+                    value = False
+                elif (input.lower() == 'true'):
+                    value = True
+                else:
+                    value = input
+                options[part.name.removeprefix('option.')] = value
 
         if 'html' not in form_data:
             logger.info('Bad request. No html file provided.')
@@ -92,7 +103,7 @@ async def render_pdf(request):
 
         try:
             html.write_pdf(
-                pdf_filename, stylesheets=[css], attachments=attachments)
+                pdf_filename, stylesheets=[css], attachments=attachments, **options)
         except Exception:
             logger.exception('PDF generation failed')
             return web.Response(
