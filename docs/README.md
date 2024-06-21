@@ -8,17 +8,17 @@ The service is based on a fork from https://github.com/4teamwork/weasyprint-dock
 
 To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://api.bcc.no/pdf 
 
-The request should contain the following parts:
+The request should contain the following file fields:
 
-* `html` - main HTML content
-* `css` - (optional) stylesheet content
+* `html` - main HTML file
+* `css` - (optional) stylesheet file
 * `file.*` - (optional) additional attachments such as images. Name must start with `file.` or `attachment.`
 
 The request must have an `Authorization Header` containing a JWT bearer with the following claims:
 
 * `issuer`: https://login.bcc.no
 * `aud`: api.bcc.no
-* `scope`: pdf#read
+* `scope`: pdf#create
 
 ## .Net SDK
 
