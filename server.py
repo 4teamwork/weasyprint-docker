@@ -10,8 +10,10 @@ from aiohttp import web
 from re import match
 from urllib.parse import urlparse
 from weasyprint import CSS
+from weasyprint import DEFAULT_OPTIONS
 from weasyprint import default_url_fetcher
 from weasyprint import HTML
+import json
 import logging
 import os.path
 import tempfile
@@ -49,6 +51,7 @@ class URLFetcher:
 async def render_pdf(request):
 
     form_data = {}
+    options = {}
     temp_dir = None
 
     if not request.content_type == 'multipart/form-data':
@@ -73,6 +76,20 @@ async def render_pdf(request):
                 or part.name.startswith('asset.')
             ):
                 form_data[part.name] = await save_part_to_file(part, temp_dir)
+            elif part.name == 'options':
+                try:
+                    options = json.loads(await part.text())
+                except json.JSONDecodeError:
+                    logger.exception('Failed decoding options.')
+                    return web.Response(
+                        status=400, text="Invalid JSON in options part.")
+                # Ignore unknown and unsafe options
+                options = {
+                    k: options[k]
+                    for k in options.keys()
+                    & DEFAULT_OPTIONS.keys()
+                    - set(['stylesheets', 'attachments', 'cache'])
+                }
 
         if 'html' not in form_data:
             logger.info('Bad request. No html file provided.')
@@ -92,7 +109,7 @@ async def render_pdf(request):
 
         try:
             html.write_pdf(
-                pdf_filename, stylesheets=[css], attachments=attachments)
+                pdf_filename, stylesheets=[css], attachments=attachments, **options)
         except Exception:
             logger.exception('PDF generation failed')
             return web.Response(
