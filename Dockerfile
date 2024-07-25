@@ -1,12 +1,12 @@
-FROM alpine:3.19 as alpine-upgrader
+FROM alpine:3.20 AS alpine-upgrader
 RUN apk upgrade --no-cache
 
-FROM scratch as alpine-upgraded
+FROM scratch AS alpine-upgraded
 COPY --from=alpine-upgrader / /
 CMD ["/bin/sh"]
 
 
-FROM alpine-upgraded as pkg-builder
+FROM alpine-upgraded AS pkg-builder
 
 RUN apk -U add \
     sudo \
@@ -28,8 +28,6 @@ RUN abuild-keygen -a -i -n
 COPY --chown=packager:packager packages/ ./
 
 RUN cd py3-pydyf && \
-    abuild -r && \
-    cd ../py3-tinycss2 && \
     abuild -r && \
     cd ../py3-weasyprint && \
     abuild -r
