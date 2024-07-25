@@ -31,6 +31,16 @@ Example:
 curl -F "html=@tests/index.html" -F "asset.universe.jpg=@tests/universe.jpg" http://localhost:3000 -o test.pdf
 ```
 
+### Options
+
+It's possible to overwrite some [weasyprint.DEFAULT_OPTIONS](https://doc.courtbouillon.org/weasyprint/stable/api_reference.html#weasyprint.DEFAULT_OPTIONS) by including a part named `options` in JSON format.
+
+Example:
+
+```
+curl -F "html=@tests/index.html" -F "asset.universe.jpg=@tests/universe.jpg" -F options='{"pdf_variant": "pdf/a-3b"};type=application/json' http://localhost:3000 -o test.pdf
+```
+
 ### Configuration
 
 By default fetching external resource is prohibited for security reasons.
