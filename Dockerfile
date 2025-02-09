@@ -1,4 +1,4 @@
-FROM alpine:3.20 AS alpine-upgrader
+FROM alpine:3.21 AS alpine-upgrader
 RUN apk upgrade --no-cache
 
 FROM scratch AS alpine-upgraded
@@ -27,13 +27,7 @@ RUN abuild-keygen -a -i -n
 
 COPY --chown=packager:packager packages/ ./
 
-RUN cd py3-pydyf && \
-    abuild -r && \
-    cd ../py3-tinycss2 && \
-    abuild -r && \
-    cd ../py3-tinyhtml5 && \
-    abuild -r && \
-    cd ../py3-weasyprint && \
+RUN cd py3-weasyprint && \
     abuild -r
 
 
