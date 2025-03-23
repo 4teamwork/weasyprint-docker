@@ -4,7 +4,7 @@
 pkgname=py3-weasyprint
 #_pkgreal is used by apkbuild-pypi to find modules at PyPI
 _pkgreal=weasyprint
-pkgver=64.1
+pkgver=65.0
 pkgrel=0
 pkgdesc="The Awesome Document Factory"
 provides=""
@@ -32,5 +32,5 @@ package() {
 }
 
 sha512sums="
-35f66b56f2f0c6f5f9d48c7fd1ff5c8dd87481c9172856e17c53455b973484711134b9ab3fe9239831d334ff62c69e5e8b810cd982b771a4b3579ba0175fd6d2  weasyprint-64.1.tar.gz
+8713d886fc2630d8efd0c3a2df6b1a9bf0b7d56c8b2a8117f5164b583e54f54897c6d2f1dd733e47406547c2f385f99c89fa8f651834404f27b6d87319509efd  weasyprint-65.0.tar.gz
 "
