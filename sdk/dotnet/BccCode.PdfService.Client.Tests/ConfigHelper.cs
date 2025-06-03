@@ -9,20 +9,16 @@ namespace BccCode.PdfService.Client.Tests
 {
     public class ConfigHelper
     {
-        public static IConfigurationRoot GetIConfigurationRoot(string outputPath)
-        {
-            return new ConfigurationBuilder()
-                .SetBasePath(outputPath)
-                .AddJsonFile("appsettings.json", optional: true)
-                .AddUserSecrets("7631d5c1-8d69-4390-9569-4ed9124457f0")
-                .Build();
-        }
-
-        public static PdfServiceOptions GetApplicationConfiguration(string outputPath)
+        public static PdfServiceOptions GetApplicationConfiguration()
         {
             var configuration = new PdfServiceOptions();
 
-            var configRoot = GetIConfigurationRoot(outputPath);
+            var dir = Directory.GetCurrentDirectory() + "../../../../";
+            var configRoot = new ConfigurationBuilder()
+                .SetBasePath(dir)
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddUserSecrets("7631d5c1-8d69-4390-9569-4ed9124457f0")
+                .Build();
 
             configRoot
                 .GetSection("PdfService")

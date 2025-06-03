@@ -5,6 +5,8 @@ VisualStudioVersion = 17.3.32819.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BccCode.PdfServer.Proxy", "BccCode.PdfServer.Proxy.csproj", "{3A4469B3-9668-4745-94C9-9257914E645B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BccCode.PdfService.Client.Tests", "..\..\sdk\dotnet\BccCode.PdfService.Client.Tests\BccCode.PdfService.Client.Tests.csproj", "{0A55B787-453E-450C-9744-FC2D173A2A0B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{3A4469B3-9668-4745-94C9-9257914E645B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A4469B3-9668-4745-94C9-9257914E645B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A4469B3-9668-4745-94C9-9257914E645B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A55B787-453E-450C-9744-FC2D173A2A0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A55B787-453E-450C-9744-FC2D173A2A0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A55B787-453E-450C-9744-FC2D173A2A0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A55B787-453E-450C-9744-FC2D173A2A0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
