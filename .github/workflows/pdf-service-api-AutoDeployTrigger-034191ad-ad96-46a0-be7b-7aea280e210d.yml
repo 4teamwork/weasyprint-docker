@@ -1,22 +1,20 @@
 name: Trigger auto deployment for pdf-service-api
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ master ]
+    branches: [master]
     paths:
-    - '**'
-    - '.github/workflows/pdf-service-api-AutoDeployTrigger-034191ad-ad96-46a0-be7b-7aea280e210d.yml'
+      - "**"
+      - ".github/workflows/pdf-service-api-AutoDeployTrigger-034191ad-ad96-46a0-be7b-7aea280e210d.yml"
+  workflow_dispatch:
 
-  # Allow mannually trigger 
-  workflow_dispatch:      
+env:
+  acr: crbccplatformprod
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    environment: prod
     steps:
       - name: Checkout to the branch
         uses: actions/checkout@v2
@@ -24,46 +22,59 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Log in to container registry
-        uses: docker/login-action@v1
+      - name: Azure login
+        uses: azure/login@v1
         with:
-          registry: bccplatform.azurecr.io
-          username: ${{ secrets.PDFSERVICEAPI_REGISTRY_USERNAME }}
-          password: ${{ secrets.PDFSERVICEAPI_REGISTRY_PASSWORD }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image for service to registry
-        uses: docker/build-push-action@v2
+      - name: Getting Credentials for Azure Container Registry
+        id: acr
+        uses: Azure/cli@v1.0.7
         with:
-          push: true
-          tags: bccplatform.azurecr.io/pdf-service:${{ github.sha }}
-          file: ./Dockerfile
+          inlineScript: |
+            echo "login<<EOF" >> $GITHUB_OUTPUT
+            echo "$(az acr login --name ${{env.acr}} --expose-token)" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ fromJSON(steps.acr.outputs.login).loginServer }}
+          username: "00000000-0000-0000-0000-000000000000"
+          password: ${{ fromJSON(steps.acr.outputs.login).accessToken }}
+
+      - name: Build and push container image to registry
+        uses: docker/build-push-action@v3
+        with:
           context: ./
-
-      - name: Build and push container image for proxy to registry
-        uses: docker/build-push-action@v2
-        with:
           push: true
-          tags: bccplatform.azurecr.io/pdf-service-proxy:${{ github.sha }}
-          file: ./proxy/BccCode.PdfServer.Proxy/Dockerfile
-          context: ./proxy/BccCode.PdfServer.Proxy/
+          tags: |
+            ${{ env.acr }}.azurecr.io/pdf-service:${{ github.sha }}
 
+      - name: Build and push container image to registry
+        uses: docker/build-push-action@v3
+        with:
+          context: ./proxy/BccCode.PdfServer.Proxy/
+          push: true
+          tags: |
+            ${{ env.acr }}.azurecr.io/pdf-service-proxy:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.PDFSERVICEAPI_AZURE_CREDENTIALS }}
 
-
       - name: Deploy to containerapp
         uses: azure/CLI@v1
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n pdf-service -g pdf-service-prod --server bccplatform.azurecr.io --username  ${{ secrets.PDFSERVICEAPI_REGISTRY_USERNAME }} --password ${{ secrets.PDFSERVICEAPI_REGISTRY_PASSWORD }}
-            az containerapp update -n pdf-service -g pdf-service-prod --container-name pdf-service --image bccplatform.azurecr.io/pdf-service:${{ github.sha }}
-            az containerapp update -n pdf-service -g pdf-service-prod --container-name pdf-service-proxy --image bccplatform.azurecr.io/pdf-service-proxy:${{ github.sha }}
+            az containerapp update -n ca-pdf -g pdf-prod --container-name pdf-service --image ${{ env.acr }}.azurecr.io/pdf-service:${{ github.sha }}
+            az containerapp update -n ca-pdf -g pdf-prod --container-name pdf-service-proxy --image ${{ env.acr }}.azurecr.io/pdf-service-proxy:${{ github.sha }}
