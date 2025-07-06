@@ -41,7 +41,8 @@ RUN --mount=from=pkg-builder,source=/home/packager/packages/work,target=/package
     apk add --no-cache --repository /packages \
     font-liberation \
     font-liberation-sans-narrow \
-    ttf-linux-libertine \
+    font-carlito \
+    font-freefont \
     python3 \
     py3-aiohttp \
     py3-weasyprint
