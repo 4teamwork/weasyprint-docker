@@ -170,6 +170,9 @@ if __name__ == '__main__':
         format='%(asctime)s %(levelname)s %(name)s %(message)s',
         level=logging.INFO,
     )
+    # Silence noise from fontTools
+    logging.getLogger('fontTools.subset').setLevel(logging.WARNING)
+    logging.getLogger('fontTools.ttLib.ttFont').setLevel(logging.WARNING)
     app = web.Application()
     app.add_routes([web.post('/', render_pdf)])
     app.add_routes([web.get('/healthcheck', healthcheck)])
