@@ -3,7 +3,7 @@ name: Build and Deploy to The Documentation Site
 on:
   # Runs on pushes to the docs folder targeting the default branch
   push:
-    branches: ["master","main"]
+    branches: ["master", "main"]
     paths:
       - docs/**
 
@@ -25,9 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build documentation site
-        uses: bcc-code/bcc-documentation-base@v2
+        uses: bcc-code/bcc-developer-docs-deploy@v1
         with:
           title: PDF Service
           description: ${{ github.event.repository.description }}
           branch: master
-          authentication: 'portal'
+          authentication: "portal"
+          pat: ${{ secrets.DEVELOPER_DOCS_DEPLOY_PAT }}
