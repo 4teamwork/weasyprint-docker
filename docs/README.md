@@ -1,24 +1,28 @@
+---
+groupSection: Products
+---
+
 # PDF Service
 
-A web service for generating PDF files from HTML.  
+A web service for generating PDF files from HTML.
 
 The service is based on a fork from https://github.com/4teamwork/weasyprint-docker which uses [WeasyPrint](https://weasyprint.org/).
 
 ## Raw Usage
 
-To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://api.bcc.no/pdf 
+To generate a PDF make a `multipart/form-data` POST request to the service endpoint: https://api.bcc.no/pdf
 
 The request should contain the following file fields:
 
-* `html` - main HTML file
-* `css` - (optional) stylesheet file
-* `file.*` - (optional) additional attachments such as images. Name must start with `file.` or `attachment.`
+- `html` - main HTML file
+- `css` - (optional) stylesheet file
+- `file.*` - (optional) additional attachments such as images. Name must start with `file.` or `attachment.`
 
 The request must have an `Authorization Header` containing a JWT bearer with the following claims:
 
-* `issuer`: https://login.bcc.no
-* `aud`: api.bcc.no
-* `scope`: pdf#create
+- `issuer`: https://login.bcc.no
+- `aud`: api.bcc.no
+- `scope`: pdf#create
 
 ## .Net SDK
 
@@ -41,7 +45,7 @@ builder.Services.AddPdfService(new PdfServiceOptions
 
 ```
 
-Note that the file provider is only required if you intend to persist the generated PDFs or need to upload attachments from storage. Any provider that implements IFileProvider may be passed to the service.  
+Note that the file provider is only required if you intend to persist the generated PDFs or need to upload attachments from storage. Any provider that implements IFileProvider may be passed to the service.
 
 In order to use the service to generate a PDF:
 
@@ -74,7 +78,7 @@ public class PdfGenerator
                 background: #333333;
                 color: white;
                 margin: 1cm;
-            }        
+            }
         ";
 
         var outputFilePath = await _client.GeneratePdfToFileAsync("mypdf.pdf", html, css, new[] { "assets/logo.png" });
