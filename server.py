@@ -11,7 +11,7 @@ from re import match
 from urllib.parse import urlparse
 from weasyprint import CSS
 from weasyprint import DEFAULT_OPTIONS
-from weasyprint import default_url_fetcher
+from weasyprint.urls import URLFetcher
 from weasyprint import HTML
 import json
 import logging
@@ -23,25 +23,29 @@ CHUNK_SIZE = 65536
 logger = logging.getLogger('weasyprint')
 
 
-class URLFetcher:
-    """URL fetcher that only allows data URLs and known files"""
-    def __init__(self, valid_paths):
+class RestrictedURLFetcher(URLFetcher):
+    """URL fetcher that only allows allowed url patterns, data URLs and known
+       files.
+    """
+
+    def __init__(self, valid_paths, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.valid_paths = valid_paths
 
-    def __call__(self, url):
+    def fetch(self, url, headers=None):
         if config['allowed_urls_pattern'] and match(
             config['allowed_urls_pattern'], url
         ):
-            return default_url_fetcher(url)
+            return super().fetch(url, headers)
 
         parsed = urlparse(url)
 
         if parsed.scheme == 'data':
-            return default_url_fetcher(url)
+            return super().fetch(url, headers)
 
         if parsed.scheme in ['', 'file'] and parsed.path:
             if os.path.abspath(parsed.path) in self.valid_paths:
-                return default_url_fetcher(url)
+                return super().fetch(url, headers)
             else:
                 raise ValueError('Only known path allowed')
 
@@ -95,9 +99,15 @@ async def render_pdf(request):
             logger.info('Bad request. No html file provided.')
             return web.Response(status=400, text="No html file provided.")
 
-        html = HTML(filename=form_data['html'], url_fetcher=URLFetcher(form_data.values()))
+        html = HTML(
+            filename=form_data['html'],
+            url_fetcher=RestrictedURLFetcher(form_data.values()),
+        )
         if 'css' in form_data:
-            css = CSS(filename=form_data['css'], url_fetcher=URLFetcher(form_data.values()))
+            css = CSS(
+                filename=form_data['css'],
+                url_fetcher=RestrictedURLFetcher(form_data.values()),
+            )
         else:
             css = CSS(string='@page { size: A4; margin: 2cm 2.5cm; }')
 
