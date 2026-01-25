@@ -1,0 +1,103 @@
+# Contributor: Fabian Affolter <fabian@affolter-engineering.ch>
+maintainer="Achill Gilgenast <achill@achill.org>"
+pkgname=py3-pillow
+pkgver=12.1.0
+pkgrel=0
+pkgdesc="Python Imaging Library"
+url="https://python-pillow.org/"
+arch="all"
+license="custom:PIL"
+makedepends="
+	freetype-dev
+	fribidi-dev
+	lcms2-dev
+	libimagequant-dev
+	libjpeg-turbo-dev
+	libpng-dev
+	libwebp-dev
+	libxcb-dev
+	openjpeg-dev
+	py3-gpep517
+	py3-pybind11
+	py3-setuptools
+	py3-wheel
+	python3-dev
+	tiff-dev
+	zlib-dev
+	"
+checkdepends="py3-pytest py3-numpy"
+subpackages="$pkgname-pyc"
+source="https://files.pythonhosted.org/packages/source/p/pillow/pillow-$pkgver.tar.gz"
+builddir="$srcdir/pillow-$pkgver"
+options="!check" # todo
+
+provides="py-pillow=$pkgver-r$pkgrel" # backwards compatibility
+replaces="py-pillow" # backwards compatiblity
+
+# secfixes:
+#   11.3.0-r0:
+#     - CVE 2025-48379
+#   10.3.0-r0:
+#     - CVE-2024-28219
+#   10.2.0-r0:
+#     - CVE-2023-50447
+#   9.1.1-r0:
+#     - CVE-2022-30595
+#   9.0.1-r0:
+#     - CVE-2022-24303
+#     - CVE-2022-22817
+#   9.0.0-r0:
+#     - CVE-2022-22815
+#     - CVE-2022-22816
+#   8.4.0-r0:
+#     - CVE-2021-23437
+#   8.3.0-r0:
+#     - CVE-2021-34552
+#   8.2.0-r0:
+#     - CVE-2021-25287
+#     - CVE-2021-25288
+#     - CVE-2021-28675
+#     - CVE-2021-28676
+#     - CVE-2021-28677
+#     - CVE-2021-28678
+#   8.1.2-r0:
+#     - CVE-2021-25289
+#     - CVE-2021-25290
+#     - CVE-2021-25291
+#     - CVE-2021-25292
+#     - CVE-2021-25293
+#     - CVE-2021-27921
+#     - CVE-2021-27922
+#     - CVE-2021-27923
+#   8.1.0-r0:
+#     - CVE-2020-35653
+#     - CVE-2020-35654
+#     - CVE-2020-35655
+#   6.2.2-r0:
+#     - CVE-2019-19911
+#     - CVE-2020-5310
+#     - CVE-2020-5311
+#     - CVE-2020-5312
+#     - CVE-2020-5313
+
+build() {
+	# zlib resides in lib
+	export CFLAGS="$CFLAGS -O2 -L/lib -flto=auto"
+	gpep517 build-wheel \
+		--wheel-dir .dist \
+		--output-fd 3 3>&1 >&2
+}
+
+check() {
+	python3 setup.py test
+	python3 selftest.py
+}
+
+package() {
+	python3 -m installer -d "$pkgdir" \
+		.dist/*.whl
+}
+
+sha512sums="
+95eef4883d495fb29609076848eab8b9ec014e3e29646e4ff8e0741d801aa9b1df5a3f32003c203e14a3dd0f35bd971d0e05e063d921f70031340839dfc611a2  pillow-12.1.0.tar.gz
+"
