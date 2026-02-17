@@ -21,10 +21,10 @@ import (
 
 type ObservabilityProvider struct {
 	serviceName string
-	logger     *slog.Logger
-	lp         *sdklog.LoggerProvider
-	tp         *sdktrace.TracerProvider
-	propagator propagation.TextMapPropagator
+	logger      *slog.Logger
+	lp          *sdklog.LoggerProvider
+	tp          *sdktrace.TracerProvider
+	propagator  propagation.TextMapPropagator
 }
 
 func (t *ObservabilityProvider) Logger() *slog.Logger {
@@ -88,10 +88,10 @@ func NewObservabilityProvider(serviceName string) *ObservabilityProvider {
 
 	return &ObservabilityProvider{
 		serviceName: serviceName,
-		logger:     logger,
-		lp:         lp,
-		tp:         tp,
-		propagator: propagator,
+		logger:      logger,
+		lp:          lp,
+		tp:          tp,
+		propagator:  propagator,
 	}
 }
 
