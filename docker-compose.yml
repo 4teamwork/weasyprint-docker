@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   pdf-service:
     build:
@@ -14,6 +12,5 @@ services:
 
     ports:
       - 8080:8080
-    environment:
-      AUTH_AUTHORITY: https://login.bcc.no/
-      AUTH_AUDIENCES: api.bcc.no,pdf-server.bcc.no,pdf-server
+    env_file:
+      - .env

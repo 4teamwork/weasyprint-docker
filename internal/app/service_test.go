@@ -182,8 +182,6 @@ func newTestService(validator TokenValidator, runner PDFRunner) *Service {
 			MaxRequestBytes: 5 * 1024 * 1024,
 			MaxPartBytes:    2 * 1024 * 1024,
 			RequestTimeout:  3 * time.Second,
-			BwrapPath:       "/usr/bin/bwrap",
-			WeasyprintPath:  "/usr/bin/weasyprint",
 		},
 	)
 }

@@ -1,22 +1,18 @@
-# PDF output comparison samples
+# PDF sample generation
 
-This folder contains a deterministic sample document for comparing rendering output between:
-
-- Old approach (Python `server.py` endpoint)
-- New approach (Go service endpoint)
+This folder contains a deterministic sample document for generating a PDF from the Go service.
 
 ## Files
 
 - `sample.html`
 - `sample.css`
 - `logo.svg`
-- `generate_and_compare.sh`
+- `generate_and_compare.sh` (generates `new.pdf`)
 
 ## Usage
 
-1. Start old service so it is reachable at `http://localhost:18080/` (or set `OLD_URL`)
-2. Start new service so it is reachable at `http://localhost:8080/` (or set `NEW_URL`)
-3. Provide JWT for the new service in `NEW_BEARER_TOKEN`
+1. Start the Go service so it is reachable at `http://localhost:8080/` (or set `NEW_URL`)
+2. Provide JWT for the service in `NEW_BEARER_TOKEN`
 
 Run:
 
@@ -27,12 +23,6 @@ NEW_BEARER_TOKEN="<token>" ./generate_and_compare.sh
 
 Optional environment overrides:
 
-- `OLD_URL`
 - `NEW_URL`
 
-Output is written to `samples/compare/out/`:
-
-- `old.pdf`
-- `new.pdf`
-
-If `pdftoppm` is installed, the script also rasterizes PDFs to PNG and compares the first page image for visual equality.
+Output is written to `samples/compare/out/new.pdf`.

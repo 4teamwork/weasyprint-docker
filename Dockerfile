@@ -43,8 +43,8 @@ USER pdfservice
 EXPOSE 8080
 
 ENV PORT=8080 \
-    BWRAP_PATH=/usr/bin/bwrap \
-    WEASYPRINT_PATH=/usr/local/bin/weasyprint \
-    AUTH_REQUIRED_SCOPE=pdf#create
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    AUTH_AUTHORITY=https://login.bcc.no \
+    AUTH_AUDIENCE=api.bcc.no
 
 ENTRYPOINT ["/usr/local/bin/pdf-service"]

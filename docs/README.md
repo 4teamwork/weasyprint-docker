@@ -6,7 +6,9 @@ groupSection: Products
 
 A web service for generating PDF files from HTML.
 
-The service is based on a fork from https://github.com/4teamwork/weasyprint-docker which uses [WeasyPrint](https://weasyprint.org/).
+The service is implemented as a single Go application that validates JWT bearer tokens and renders PDFs using [WeasyPrint](https://weasyprint.org/) in a `bubblewrap` sandbox.
+
+See [architecture.md](./architecture.md) for system overview.
 
 ## Raw Usage
 
@@ -25,6 +27,20 @@ The request must have an `Authorization Header` containing a JWT bearer with the
 - `issuer`: https://login.bcc.no
 - `aud`: api.bcc.no
 - `scope`: pdf#create
+
+## Configuration
+
+Runtime environment variables:
+
+- `PORT` (optional, default `8080`)
+- `AUTH_AUTHORITY` (required)
+- `AUTH_AUDIENCE` (required)
+
+For local development, create `.env` from `.env.example` and run:
+
+```bash
+bash scripts/run-local.sh
+```
 
 ## .Net SDK
 

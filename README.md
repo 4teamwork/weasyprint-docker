@@ -6,6 +6,7 @@ The service is implemented as a single Go web service that validates JWT bearer 
 
 ## Usage
 See the [documentation](./docs/README.md) for usage.
+See [architecture notes](./docs/architecture.md) for structure.
 
 ## Service Deployment
 
@@ -14,12 +15,39 @@ The service runs as a single container exposing port `8080`.
 Required environment variables:
 
 - `AUTH_AUTHORITY` - OIDC authority URL (for example `https://login.bcc.no`)
-- `AUTH_AUDIENCES` - comma-separated accepted token audiences
+- `AUTH_AUDIENCE` - accepted token audience (for example `api.bcc.no`)
 
 Optional environment variables:
 
-- `AUTH_ISSUER` (default: `AUTH_AUTHORITY`)
-- `AUTH_REQUIRED_SCOPE` (default: `pdf#create`)
-- `MAX_REQUEST_BYTES` (default: `104857600`)
-- `MAX_PART_BYTES` (default: `52428800`)
-- `REQUEST_TIMEOUT_SECONDS` (default: `120`)
+- `PORT` (default: `8080`)
+
+All other settings use sane built-in defaults in the service code.
+
+## Local development
+
+Use a local `.env` file so required settings are loaded automatically.
+
+1. Create local env file:
+
+```bash
+cp .env.example .env
+```
+
+2. Start service with env auto-loading:
+
+```bash
+bash scripts/run-local.sh
+```
+
+The script reads `.env`, exports all values, and runs `go run ./cmd/pdfservice/main.go`.
+It also validates `AUTH_AUTHORITY`, `AUTH_AUDIENCE`, `bwrap`, and `weasyprint` before startup.
+
+## Common commands
+
+```bash
+make run
+make test
+make docker-build
+make docker-up
+make sample-pdf
+```

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -15,38 +14,21 @@ import (
 )
 
 type OIDCValidator struct {
-	issuer     string
-	audiences  map[string]struct{}
-	jwksURI    string
-	httpClient *http.Client
-
-	mu              sync.RWMutex
-	keySet          jwk.Set
-	lastFetch       time.Time
-	refreshInterval time.Duration
+	issuer   string
+	audience string
+	jwksURI  string
+	cache    *jwk.Cache
 }
 
-func NewOIDCValidator(ctx context.Context, authority string, issuer string, audiences []string) (*OIDCValidator, error) {
+func NewOIDCValidator(ctx context.Context, authority string, audience string) (*OIDCValidator, error) {
 	authority = strings.TrimRight(strings.TrimSpace(authority), "/")
 	if authority == "" {
 		return nil, errors.New("authority is required")
 	}
 
-	audienceMap := make(map[string]struct{}, len(audiences))
-	for _, aud := range audiences {
-		normalized := strings.TrimSpace(aud)
-		if normalized == "" {
-			continue
-		}
-		audienceMap[normalized] = struct{}{}
-	}
-	if len(audienceMap) == 0 {
-		return nil, errors.New("at least one audience is required")
-	}
-
-	normalizedIssuer := strings.TrimSpace(strings.TrimRight(issuer, "/"))
-	if normalizedIssuer == "" {
-		normalizedIssuer = authority
+	audience = strings.TrimSpace(audience)
+	if audience == "" {
+		return nil, errors.New("audience is required")
 	}
 
 	jwksURI, err := discoverJWKSURI(ctx, authority)
@@ -54,16 +36,25 @@ func NewOIDCValidator(ctx context.Context, authority string, issuer string, audi
 		return nil, err
 	}
 
-	validator := &OIDCValidator{
-		issuer:          normalizedIssuer,
-		audiences:       audienceMap,
-		jwksURI:         jwksURI,
-		httpClient:      &http.Client{Timeout: 10 * time.Second},
-		refreshInterval: 5 * time.Minute,
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	cache := jwk.NewCache(ctx)
+	if err := cache.Register(
+		jwksURI,
+		jwk.WithMinRefreshInterval(5*time.Minute),
+		jwk.WithHTTPClient(httpClient),
+	); err != nil {
+		return nil, fmt.Errorf("failed to register jwks cache: %w", err)
 	}
 
-	if err := validator.refreshKeySet(ctx); err != nil {
-		return nil, err
+	if _, err := cache.Refresh(ctx, jwksURI); err != nil {
+		return nil, fmt.Errorf("failed to initialize jwks cache: %w", err)
+	}
+
+	validator := &OIDCValidator{
+		issuer:   authority,
+		audience: audience,
+		jwksURI:  jwksURI,
+		cache:    cache,
 	}
 
 	return validator, nil
@@ -103,9 +94,9 @@ func discoverJWKSURI(ctx context.Context, authority string) (string, error) {
 }
 
 func (v *OIDCValidator) Validate(ctx context.Context, token string) (TokenClaims, error) {
-	keySet, err := v.getKeySet(ctx)
+	keySet, err := v.cache.Get(ctx, v.jwksURI)
 	if err != nil {
-		return TokenClaims{}, err
+		return TokenClaims{}, fmt.Errorf("failed to get jwks keyset: %w", err)
 	}
 
 	parsedToken, err := jwt.Parse(
@@ -114,145 +105,56 @@ func (v *OIDCValidator) Validate(ctx context.Context, token string) (TokenClaims
 		jwt.WithValidate(true),
 	)
 	if err != nil {
-		if refreshErr := v.refreshKeySet(ctx); refreshErr == nil {
-			v.mu.RLock()
-			refreshedKeySet := v.keySet
-			v.mu.RUnlock()
-			parsedToken, err = jwt.Parse(
-				[]byte(token),
-				jwt.WithKeySet(refreshedKeySet),
-				jwt.WithValidate(true),
-			)
+		if _, refreshErr := v.cache.Refresh(ctx, v.jwksURI); refreshErr == nil {
+			if refreshedSet, getErr := v.cache.Get(ctx, v.jwksURI); getErr == nil {
+				parsedToken, err = jwt.Parse(
+					[]byte(token),
+					jwt.WithKeySet(refreshedSet),
+					jwt.WithValidate(true),
+				)
+			}
 		}
 	}
 	if err != nil {
 		return TokenClaims{}, fmt.Errorf("token verification failed: %w", err)
 	}
 
+	if err := jwt.Validate(
+		parsedToken,
+		jwt.WithAudience(v.audience),
+	); err != nil {
+		return TokenClaims{}, fmt.Errorf("token claims validation failed: %w", err)
+	}
 
-	fmt.Println(parsedToken.Issuer(), parsedToken.Audience())
 	if normalizeIssuer(parsedToken.Issuer()) != normalizeIssuer(v.issuer) {
-		return TokenClaims{}, errors.New("invalid token issuer")
-	}
-	if !audienceMatches(parsedToken.Audience(), v.audiences) {
-		return TokenClaims{}, errors.New("invalid token audience")
+		return TokenClaims{}, errors.New("token claims validation failed: issuer mismatch")
 	}
 
-	var scope string
-	if rawScope, ok := parsedToken.Get("scope"); ok {
-		scope, _ = rawScope.(string)
-	}
-
-	var scp any
-	if rawScp, ok := parsedToken.Get("scp"); ok {
-		scp = rawScp
-	}
-
-	scopes := extractScopes(scope, scp)
+	scopes := extractSupportedScopes(parsedToken)
 	return TokenClaims{Scopes: scopes}, nil
 }
 
-func (v *OIDCValidator) getKeySet(ctx context.Context) (jwk.Set, error) {
-	v.mu.RLock()
-	keySet := v.keySet
-	lastFetch := v.lastFetch
-	v.mu.RUnlock()
-
-	if keySet != nil && time.Since(lastFetch) < v.refreshInterval {
-		return keySet, nil
-	}
-
-	if err := v.refreshKeySet(ctx); err != nil {
-		if keySet != nil {
-			return keySet, nil
-		}
-		return nil, err
-	}
-
-	v.mu.RLock()
-	defer v.mu.RUnlock()
-	if v.keySet == nil {
-		return nil, errors.New("jwks keyset unavailable")
-	}
-	return v.keySet, nil
-}
-
-func (v *OIDCValidator) refreshKeySet(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, v.jwksURI, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create jwks request: %w", err)
-	}
-
-	res, err := v.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to fetch jwks: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("jwks endpoint returned status %d", res.StatusCode)
-	}
-	set, err := jwk.ParseReader(res.Body)
-	if err != nil {
-		return fmt.Errorf("failed to parse jwks: %w", err)
-	}
-	if set.Len() == 0 {
-		return errors.New("jwks does not contain any usable keys")
-	}
-
-	v.mu.Lock()
-	v.keySet = set
-	v.lastFetch = time.Now()
-	v.mu.Unlock()
-
-	return nil
-}
-
-func normalizeIssuer(issuer string) string {
-	return strings.TrimRight(strings.TrimSpace(issuer), "/")
-}
-
-func audienceMatches(claimAud any, expected map[string]struct{}) bool {
-	switch aud := claimAud.(type) {
-	case string:
-		_, exists := expected[aud]
-		return exists
-	case []string:
-		for _, item := range aud {
-			if _, exists := expected[item]; exists {
-				return true
-			}
-		}
-	case []any:
-		for _, item := range aud {
-			itemStr, ok := item.(string)
-			if !ok {
-				continue
-			}
-			if _, exists := expected[itemStr]; exists {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func extractScopes(scope string, scp any) []string {
+func extractSupportedScopes(token jwt.Token) []string {
 	result := make([]string, 0)
-	for _, item := range strings.Fields(scope) {
-		result = append(result, item)
+
+	if rawScope, ok := token.Get("scope"); ok {
+		if scope, cast := rawScope.(string); cast {
+			for _, item := range strings.Fields(scope) {
+				result = append(result, item)
+			}
+		}
 	}
 
-	switch typed := scp.(type) {
-	case string:
-		for _, item := range strings.Fields(typed) {
-			result = append(result, item)
-		}
-	case []any:
-		for _, item := range typed {
-			value, ok := item.(string)
-			if ok && strings.TrimSpace(value) != "" {
-				result = append(result, strings.TrimSpace(value))
+	if rawPermissions, ok := token.Get("permissions"); ok {
+		switch permissions := rawPermissions.(type) {
+		case []string:
+			result = append(result, permissions...)
+		case []any:
+			for _, item := range permissions {
+				permission, cast := item.(string)
+				if cast {
+					result = append(result, strings.TrimSpace(permission))
+				}
 			}
 		}
 	}
@@ -275,4 +177,8 @@ func unique(items []string) []string {
 		result = append(result, normalized)
 	}
 	return result
+}
+
+func normalizeIssuer(issuer string) string {
+	return strings.TrimRight(strings.TrimSpace(issuer), "/")
 }
