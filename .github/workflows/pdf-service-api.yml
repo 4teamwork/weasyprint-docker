@@ -53,7 +53,7 @@ jobs:
         env: ${{fromJSON((inputs.environment || 'all') == 'all' && '["sandbox", "staging", "prod"]' || format('["{0}"]', inputs.environment))}}
     environment: ${{matrix.env}}
     env:
-      GCP_IMAGE_TAG: ${{fromJson(vars.PROPS).gcp.location}}-docker.pkg.dev/${{ fromJson(vars.PROPS).gcp.project_id }}/ar-main-${{ matrix.env }}/main:${{ github.sha }}
+      GCP_IMAGE_TAG: ${{fromJson(vars.PROPS).gcp.location}}-docker.pkg.dev/${{ fromJson(vars.PROPS).gcp.project_id }}/ar-main/main:${{ github.sha }}
       GCP_SA_EMAIL: sa-gha-cicd@${{fromJson(vars.PROPS).gcp.project_id}}.iam.gserviceaccount.com
 
     steps:
