@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -12,16 +11,22 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	slog.SetDefault(logger)
-
 	port := getEnv("PORT", "8080")
 	authority := mustGetEnv("AUTH_AUTHORITY")
 	audience := mustGetEnv("AUTH_AUDIENCE")
+	otelServiceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
 
-	validator, err := app.NewOIDCValidator(context.Background(), authority, audience, defaultRequiredScope)
+	obs := app.Observability(app.NewMockObservabilityProvider())
+
+	if otelServiceName != "" {
+		obs = app.NewObservabilityProvider(otelServiceName)
+	}
+	defer obs.Shutdown()
+	logger := obs.Logger()
+
+	validator, err := app.NewOIDCValidator(context.Background(), authority, audience, defaultRequiredScope, obs)
 	if err != nil {
-		slog.Error("failed to initialize authentication", "error", err)
+		logger.Error("failed to initialize authentication", "error", err)
 		os.Exit(1)
 	}
 
@@ -33,20 +38,21 @@ func main() {
 			MaxPartBytes:    defaultMaxPartBytes,
 			RequestTimeout:  defaultRequestTimeout,
 		},
+		obs,
 	)
 
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           svc.Routes(),
+		Handler:           obs.HttpHandler(otelServiceName, svc.Routes()),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      defaultRequestTimeout + 15*time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
-	slog.Info("service starting", "listen_address", ":"+port, "authority", authority, "audience", audience)
+	logger.Info("service starting", "listen_address", ":"+port, "authority", authority, "audience", audience)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("server failed", "error", err)
+		logger.Error("server failed", "error", err)
 		os.Exit(1)
 	}
 }
@@ -72,7 +78,7 @@ func getEnv(name string, fallback string) string {
 func mustGetEnv(name string) string {
 	value := strings.TrimSpace(os.Getenv(name))
 	if value == "" {
-		slog.Error("missing required environment variable", "name", name)
+		_, _ = os.Stderr.WriteString("missing required environment variable: " + name + "\n")
 		os.Exit(1)
 	}
 	return value

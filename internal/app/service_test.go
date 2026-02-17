@@ -173,6 +173,7 @@ func newTestService(validator TokenValidator, runner PDFRunner) *Service {
 			MaxPartBytes:    2 * 1024 * 1024,
 			RequestTimeout:  3 * time.Second,
 		},
+		NewMockObservabilityProvider(),
 	)
 }
 

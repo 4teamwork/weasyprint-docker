@@ -50,7 +50,7 @@ func NewInternalError(message string, cause error) error {
 	return &AppError{StatusCode: http.StatusInternalServerError, Message: message, Cause: cause}
 }
 
-func writeHTTPError(w http.ResponseWriter, r *http.Request, err error) {
+func writeHTTPError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	var appErr *AppError
 	if errors.As(err, &appErr) {
 		attributes := []any{
@@ -67,7 +67,7 @@ func writeHTTPError(w http.ResponseWriter, r *http.Request, err error) {
 		if appErr.Cause != nil {
 			attributes = append(attributes, "cause", appErr.Cause.Error())
 		}
-		slog.Error("request failed", attributes...)
+		logger.Error("request failed", attributes...)
 		http.Error(w, appErr.Message, appErr.StatusCode)
 		return
 	}
@@ -83,7 +83,7 @@ func writeHTTPError(w http.ResponseWriter, r *http.Request, err error) {
 	if err != nil {
 		attributes = append(attributes, "cause", err.Error())
 	}
-	slog.Error("request failed with unexpected error type", attributes...)
+	logger.Error("request failed with unexpected error type", attributes...)
 
 	http.Error(w, "Failed to process request.", http.StatusInternalServerError)
 }

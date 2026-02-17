@@ -28,13 +28,15 @@ type Service struct {
 	validator TokenValidator
 	runner    PDFRunner
 	config    Config
+	obs       Observability
 }
 
-func NewService(validator TokenValidator, runner PDFRunner, config Config) *Service {
+func NewService(validator TokenValidator, runner PDFRunner, config Config, obs Observability) *Service {
 	return &Service{
 		validator: validator,
 		runner:    runner,
 		config:    config,
+		obs:       obs,
 	}
 }
 
@@ -54,17 +56,17 @@ func (s *Service) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := parseBearerToken(r.Header.Get("Authorization"))
 		if err != nil {
-			writeHTTPError(w, r, NewUnauthorizedError("Unauthorized", err))
+			writeHTTPError(s.obs.Logger(), w, r, NewUnauthorizedError("Unauthorized", err))
 			return
 		}
 
 		err = s.validator.Validate(r.Context(), token)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
-				writeHTTPError(w, r, NewForbiddenError("Forbidden", err))
+				writeHTTPError(s.obs.Logger(), w, r, NewForbiddenError("Forbidden", err))
 				return
 			}
-			writeHTTPError(w, r, NewUnauthorizedError("Unauthorized", err))
+			writeHTTPError(s.obs.Logger(), w, r, NewUnauthorizedError("Unauthorized", err))
 			return
 		}
 
@@ -74,21 +76,21 @@ func (s *Service) requireAuth(next http.Handler) http.Handler {
 
 func (s *Service) renderPDF(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeHTTPError(w, r, NewMethodNotAllowedError("Method not allowed", nil))
+		writeHTTPError(s.obs.Logger(), w, r, NewMethodNotAllowedError("Method not allowed", nil))
 		return
 	}
 
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil || mediaType != "multipart/form-data" {
-		writeHTTPError(w, r, NewBadRequestError("Multipart request required.", err))
+		writeHTTPError(s.obs.Logger(), w, r, NewBadRequestError("Multipart request required.", err))
 		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxRequestBytes)
 	reader, err := r.MultipartReader()
 	if err != nil {
-		writeHTTPError(w, r, NewBadRequestError("Multipart request required.", err))
+		writeHTTPError(s.obs.Logger(), w, r, NewBadRequestError("Multipart request required.", err))
 		return
 	}
 
@@ -97,7 +99,7 @@ func (s *Service) renderPDF(w http.ResponseWriter, r *http.Request) {
 
 	err = s.generatePDFToWriter(r.Context(), reader, w)
 	if err != nil {
-		writeHTTPError(w, r, err)
+		writeHTTPError(s.obs.Logger(), w, r, err)
 		return
 	}
 }

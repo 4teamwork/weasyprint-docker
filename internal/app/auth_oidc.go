@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -22,7 +20,7 @@ type OIDCValidator struct {
 	keySet   jwk.Set
 }
 
-func NewOIDCValidator(ctx context.Context, authority string, audience string, scope string) (*OIDCValidator, error) {
+func NewOIDCValidator(ctx context.Context, authority string, audience string, scope string, obs Observability) (*OIDCValidator, error) {
 	if authority == "" {
 		return nil, errors.New("authority is required")
 	}
@@ -33,12 +31,12 @@ func NewOIDCValidator(ctx context.Context, authority string, audience string, sc
 
 	if scope == "" {
 		return nil, errors.New("scope is required")
-
 	}
 
-	jwksURI := strings.TrimRight(authority, "/") + "/.well-known/jwks.json"
+	normalizedAuthority := strings.TrimRight(authority, "/")
+	jwksURI := normalizedAuthority + "/.well-known/jwks.json"
 
-	keySet, err := jwk.Fetch(ctx, jwksURI, jwk.WithHTTPClient(&http.Client{Timeout: 10 * time.Second}))
+	keySet, err := jwk.Fetch(ctx, jwksURI, jwk.WithHTTPClient(obs.HttpClient(nil)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch jwks: %w", err)
 	}
@@ -47,7 +45,7 @@ func NewOIDCValidator(ctx context.Context, authority string, audience string, sc
 	}
 
 	validator := &OIDCValidator{
-		issuer:   authority,
+		issuer:   normalizedAuthority,
 		audience: audience,
 		scope:    scope,
 		keySet:   keySet,
