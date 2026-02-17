@@ -1,86 +1,93 @@
-name: Trigger auto deployment for pdf-service-api
+name: Deploy Calendar Task
+run-name: Deploy Calendar Task - ${{inputs.environment || 'all'}}
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
     paths:
       - "**"
-      - ".github/workflows/pdf-service-api-AutoDeployTrigger-034191ad-ad96-46a0-be7b-7aea280e210d.yml"
   workflow_dispatch:
-
-env:
-  acr: crbccplatformprod
+    inputs:
+      environment:
+        description: Deployment environment
+        type: choice
+        default: all
+        options:
+          - sandbox
+          - prod
+          - all
 
 permissions:
-  id-token: write
-  contents: read
+  contents: "read"
+  id-token: "write"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: prod
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Azure login
-        uses: azure/login@v1
+        uses: docker/setup-buildx-action@v3
+      - name: Build and export
+        uses: docker/build-push-action@v6
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tags: local-image:latest
+          context: .
+          file: ./Dockerfile
+          outputs: type=docker,dest=${{ runner.temp }}/local-image.tar
 
-      - name: Getting Credentials for Azure Container Registry
-        id: acr
-        uses: Azure/cli@v1.0.7
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          inlineScript: |
-            echo "login<<EOF" >> $GITHUB_OUTPUT
-            echo "$(az acr login --name ${{env.acr}} --expose-token)" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Login to Azure Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ fromJSON(steps.acr.outputs.login).loginServer }}
-          username: "00000000-0000-0000-0000-000000000000"
-          password: ${{ fromJSON(steps.acr.outputs.login).accessToken }}
-
-      - name: Build and push container image to registry
-        uses: docker/build-push-action@v3
-        with:
-          context: ./
-          push: true
-          tags: |
-            ${{ env.acr }}.azurecr.io/pdf-service:${{ github.sha }}
-
-      - name: Build and push container image to registry
-        uses: docker/build-push-action@v3
-        with:
-          context: ./proxy/BccCode.PdfServer.Proxy/
-          push: true
-          tags: |
-            ${{ env.acr }}.azurecr.io/pdf-service-proxy:${{ github.sha }}
+          name: local-image
+          path: ${{ runner.temp }}/local-image.tar
 
   deploy:
+    needs: [build]
     runs-on: ubuntu-latest
-    needs: build
-    environment: prod
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ${{fromJSON((inputs.environment || 'all') == 'all' && '["sandbox", "staging", "prod"]' || format('["{0}"]', inputs.environment))}}
+    environment: ${{matrix.env}}
+    env:
+      GCP_IMAGE_TAG: ${{fromJson(vars.PROPS).gcp.location}}-docker.pkg.dev/${{ fromJson(vars.PROPS).gcp.project_id }}/ar-main-${{ matrix.env }}/main:${{ github.sha }}
+      GCP_SA_EMAIL: sa-gha-cicd@${{fromJson(vars.PROPS).gcp.project_id}}.iam.gserviceaccount.com
 
-      - name: Deploy to containerapp
-        uses: azure/CLI@v1
+    steps:
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
         with:
-          inlineScript: |
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp update -n ca-pdf -g pdf-prod --container-name pdf-service --image ${{ env.acr }}.azurecr.io/pdf-service:${{ github.sha }}
-            az containerapp update -n ca-pdf -g pdf-prod --container-name pdf-service-proxy --image ${{ env.acr }}.azurecr.io/pdf-service-proxy:${{ github.sha }}
+          workload_identity_provider: ${{ (matrix.env == 'prod' || matrix.env == 'staging') && vars.GCP_WIDPP_ID_PROD || vars.GCP_WIDPP_ID_DEV }}
+          service_account: ${{ env.GCP_SA_EMAIL }}
+          project_id: ${{ fromJson(vars.PROPS).gcp.project_id }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: local-image
+          path: ${{ runner.temp }}
+
+      - name: Push Image to artifact registry
+        shell: bash
+        run: |-
+          # Configure docker for artifact registry
+          gcloud --quiet auth configure-docker ${{ fromJson(vars.PROPS).gcp.location }}-docker.pkg.dev
+
+          # Load image from GHA artifacts
+          docker load --input ${{ runner.temp }}/local-image.tar
+
+          # Push image to artifact registry
+          docker tag local-image:latest ${{ env.GCP_IMAGE_TAG }}
+          docker push ${{ env.GCP_IMAGE_TAG }}
+
+      - name: Deploy image to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          job: widgets-calendar-task-${{matrix.env}}
+          image: ${{ env.GCP_IMAGE_TAG }}
+          region: ${{ fromJson(vars.PROPS).gcp.location }}
+          flags: --service-account=sa-${{ vars.GCP_CLOUDRUN_NAME }}@${{fromJson(vars.PROPS).gcp.project_id}}.iam.gserviceaccount.com
