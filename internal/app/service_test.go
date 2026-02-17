@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHealthcheckWithoutAuth(t *testing.T) {
@@ -20,12 +22,8 @@ func TestHealthcheckWithoutAuth(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-	if strings.TrimSpace(rec.Body.String()) != "OK" {
-		t.Fatalf("expected healthcheck body OK, got %q", rec.Body.String())
-	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "OK", strings.TrimSpace(rec.Body.String()))
 }
 
 func TestRenderPDFUnauthorizedWhenMissingToken(t *testing.T) {
@@ -36,9 +34,7 @@ func TestRenderPDFUnauthorizedWhenMissingToken(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d", rec.Code)
-	}
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
 func TestRenderPDFForbiddenWhenScopeMissing(t *testing.T) {
@@ -50,9 +46,7 @@ func TestRenderPDFForbiddenWhenScopeMissing(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status 403, got %d", rec.Code)
-	}
+	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
 
 func TestRenderPDFBadContentType(t *testing.T) {
@@ -64,9 +58,7 @@ func TestRenderPDFBadContentType(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", rec.Code)
-	}
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
 func TestRenderPDFRequiresHTML(t *testing.T) {
@@ -79,12 +71,8 @@ func TestRenderPDFRequiresHTML(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", rec.Code)
-	}
-	if !strings.Contains(rec.Body.String(), "No html file provided") {
-		t.Fatalf("expected missing html message, got %q", rec.Body.String())
-	}
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Contains(t, rec.Body.String(), "No html file provided")
 }
 
 func TestRenderPDFSuccess(t *testing.T) {
@@ -107,22 +95,12 @@ func TestRenderPDFSuccess(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d body: %q", rec.Code, rec.Body.String())
-	}
-	if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
-		t.Fatalf("expected application/pdf content type, got %q", ct)
-	}
-	if !bytes.Equal(rec.Body.Bytes(), []byte("%PDF-1.4")) {
-		t.Fatalf("unexpected PDF body: %q", rec.Body.String())
-	}
-
-	if runner.lastHTML == "" || runner.lastCSS == "" {
-		t.Fatalf("expected html and css files to be passed to runner")
-	}
-	if len(runner.lastAttachments) != 1 {
-		t.Fatalf("expected one attachment, got %d", len(runner.lastAttachments))
-	}
+	assert.Equal(t, http.StatusOK, rec.Code, "body: %q", rec.Body.String())
+	assert.Equal(t, "application/pdf", rec.Header().Get("Content-Type"))
+	assert.True(t, bytes.Equal(rec.Body.Bytes(), []byte("%PDF-1.4")), "unexpected PDF body: %q", rec.Body.String())
+	assert.NotEmpty(t, runner.lastHTML)
+	assert.NotEmpty(t, runner.lastCSS)
+	assert.Len(t, runner.lastAttachments, 1)
 }
 
 func TestRenderPDFSupportsFilePrefixAttachments(t *testing.T) {
@@ -140,12 +118,8 @@ func TestRenderPDFSupportsFilePrefixAttachments(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-	if len(runner.lastAttachments) != 1 {
-		t.Fatalf("expected one attachment from file.* field, got %d", len(runner.lastAttachments))
-	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Len(t, runner.lastAttachments, 1)
 }
 
 func TestRenderPDFFailedRunnerReturns500(t *testing.T) {
@@ -159,9 +133,7 @@ func TestRenderPDFFailedRunnerReturns500(t *testing.T) {
 
 	svc.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("expected status 500, got %d", rec.Code)
-	}
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }
 
 func newTestService(validator TokenValidator, runner PDFRunner) *Service {
@@ -170,7 +142,6 @@ func newTestService(validator TokenValidator, runner PDFRunner) *Service {
 		runner,
 		Config{
 			MaxRequestBytes: 5 * 1024 * 1024,
-			MaxPartBytes:    2 * 1024 * 1024,
 			RequestTimeout:  3 * time.Second,
 		},
 		NewMockObservabilityProvider(),

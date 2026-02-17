@@ -36,5 +36,6 @@ The service intentionally exposes a minimal env surface:
 - `PORT` (optional, default `8080`)
 - `AUTH_AUTHORITY` (required)
 - `AUTH_AUDIENCE` (required)
+- `OTEL_SERVICE_NAME` (optional; enables real OpenTelemetry provider when set, otherwise mock/local observability is used)
 
 All other settings are hardcoded defaults in code.

@@ -20,6 +20,7 @@ Required environment variables:
 Optional environment variables:
 
 - `PORT` (default: `8080`)
+- `OTEL_SERVICE_NAME` (when set, enables OpenTelemetry tracing/logging exporter)
 
 All other settings use sane built-in defaults in the service code.
 

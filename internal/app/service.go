@@ -12,7 +12,6 @@ import (
 
 type Config struct {
 	MaxRequestBytes int64
-	MaxPartBytes    int64
 	RequestTimeout  time.Duration
 }
 
@@ -123,4 +122,5 @@ type WeasyprintRunner struct {
 	BwrapPath             string
 	WeasyprintPath        string
 	DefaultStylesheetPath string
+	Stderr                io.Writer
 }

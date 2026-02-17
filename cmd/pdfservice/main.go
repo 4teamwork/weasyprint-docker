@@ -35,7 +35,6 @@ func main() {
 		app.WeasyprintRunner{BwrapPath: defaultBwrapPath, WeasyprintPath: defaultWeasyprintPath, DefaultStylesheetPath: defaultStylesheetPath},
 		app.Config{
 			MaxRequestBytes: defaultMaxRequestBytes,
-			MaxPartBytes:    defaultMaxPartBytes,
 			RequestTimeout:  defaultRequestTimeout,
 		},
 		obs,
@@ -60,7 +59,6 @@ func main() {
 const (
 	defaultRequiredScope   = "pdf#create"
 	defaultMaxRequestBytes = int64(104857600)
-	defaultMaxPartBytes    = int64(52428800)
 	defaultRequestTimeout  = 120 * time.Second
 	defaultBwrapPath       = "bwrap"
 	defaultWeasyprintPath  = "weasyprint"

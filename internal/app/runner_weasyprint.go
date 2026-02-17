@@ -12,6 +12,25 @@ import (
 const sandboxDefaultStylesheetPath = "/defaults/default.css"
 
 func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error {
+	args := r.buildArgs(workDir, htmlFilename, cssFilename, attachmentFilenames)
+
+	cmd := exec.CommandContext(ctx, r.BwrapPath, args...)
+	cmd.Env = []string{"HOME=/tmp", "TMPDIR=/tmp", "PATH=/usr/local/bin:/usr/bin"}
+	cmd.Stdout = output
+	var stderr bytes.Buffer
+	if r.Stderr != nil {
+		cmd.Stderr = io.MultiWriter(&stderr, r.Stderr)
+	} else {
+		cmd.Stderr = &stderr
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("weasyprint failed: %w: %s", err, strings.TrimSpace(stderr.String()))
+	}
+	return nil
+}
+
+func (r WeasyprintRunner) buildArgs(workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string) []string {
 	defaultStylesheetPath := r.DefaultStylesheetPath
 	if defaultStylesheetPath == "" {
 		defaultStylesheetPath = "assets/default.css"
@@ -24,20 +43,21 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 		"--new-session",
 		"--clearenv",
 		"--ro-bind", "/usr", "/usr",
-		"--ro-bind", "/bin", "/bin",
-		"--ro-bind", "/lib", "/lib",
-		"--ro-bind", "/lib64", "/lib64",
-		"--ro-bind", "/sbin", "/sbin",
-		"--ro-bind", "/etc", "/etc",
+		"--ro-bind-try", "/lib", "/lib",
+		"--ro-bind-try", "/lib64", "/lib64",
+		"--ro-bind-try", "/etc/fonts", "/etc/fonts",
+		"--ro-bind-try", "/etc/xml", "/etc/xml",
+		"--ro-bind-try", "/etc/ssl", "/etc/ssl",
+		"--ro-bind-try", "/etc/pki", "/etc/pki",
+		"--ro-bind-try", "/etc/mime.types", "/etc/mime.types",
 		"--dir", "/defaults",
 		"--ro-bind", defaultStylesheetPath, sandboxDefaultStylesheetPath,
 		"--tmpfs", "/tmp",
-		"--tmpfs", "/run",
-		"--bind", workDir, "/workspace",
+		"--ro-bind", workDir, "/workspace",
 		"--chdir", "/workspace",
 		"--setenv", "HOME", "/tmp",
 		"--setenv", "TMPDIR", "/tmp",
-		"--setenv", "PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		"--setenv", "PATH", "/usr/local/bin:/usr/bin",
 		"--",
 		r.WeasyprintPath,
 		htmlFilename,
@@ -50,14 +70,5 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 		args = append(args, "--attachment", attachment)
 	}
 
-	cmd := exec.CommandContext(ctx, r.BwrapPath, args...)
-	cmd.Env = []string{"HOME=/tmp", "TMPDIR=/tmp", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
-	cmd.Stdout = output
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("weasyprint failed: %w: %s", err, strings.TrimSpace(stderr.String()))
-	}
-	return nil
+	return args
 }
