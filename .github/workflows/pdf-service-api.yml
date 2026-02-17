@@ -1,5 +1,5 @@
-name: Deploy Calendar Task
-run-name: Deploy Calendar Task - ${{inputs.environment || 'all'}}
+name: Deploy PDF Service
+run-name: Deploy PDF Service - ${{inputs.environment || 'all'}}
 
 on:
   push:
