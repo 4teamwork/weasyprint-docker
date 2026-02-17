@@ -1,10 +1,19 @@
 version: "3.8"
 
 services:
-  weasyprint:
+  pdf-service:
     build:
       context: .
       dockerfile: Dockerfile
-    image: 4teamwork/weasyprint:latest
+    image: bcc/pdf-service:latest
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+
     ports:
-      - 3000:8080
+      - 8080:8080
+    environment:
+      AUTH_AUTHORITY: https://login.bcc.no/
+      AUTH_AUDIENCES: api.bcc.no,pdf-server.bcc.no,pdf-server

@@ -1,0 +1,74 @@
+@page {
+  size: A4;
+  margin: 20mm 18mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  color: #222;
+  font-size: 11pt;
+  line-height: 1.4;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8mm;
+  border-bottom: 1px solid #cccccc;
+  padding-bottom: 5mm;
+}
+
+.logo {
+  width: 28mm;
+  height: 28mm;
+  margin-right: 12mm;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20pt;
+}
+
+h2 {
+  margin: 6mm 0 3mm;
+  font-size: 14pt;
+}
+
+.sub {
+  margin: 1mm 0 0;
+  color: #666666;
+}
+
+.pill {
+  display: inline-block;
+  border: 1px solid #4e73df;
+  color: #4e73df;
+  border-radius: 999px;
+  padding: 1mm 2.5mm;
+  font-size: 9pt;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2mm;
+}
+
+th,
+td {
+  border: 1px solid #d9d9d9;
+  padding: 2.5mm;
+  text-align: left;
+}
+
+thead {
+  background: #f4f6f8;
+}
+
+.page-break {
+  page-break-after: always;
+}

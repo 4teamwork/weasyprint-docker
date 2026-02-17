@@ -2,15 +2,24 @@
 
 A web service for generating PDF files from HTML.  
 
-The service is based on a fork from https://github.com/4teamwork/weasyprint-docker which uses [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html).
+The service is implemented as a single Go web service that validates JWT bearer tokens, securely processes multipart uploads and invokes [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html) through a `bubblewrap` sandbox.
 
 ## Usage
 See the [documentation](./docs/README.md) for usage.
 
 ## Service Deployment
 
-The service runs as an Azure Container App containing two containers:
+The service runs as a single container exposing port `8080`.
 
-1. Ingress [reverse proxy](/proxy) - .net application which handles authentication and forwards authenticated requests to the weasyprint service. This container is public on port 443.  
+Required environment variables:
 
-2. [Weasyprint server](server.py) - python web service which passes requests to the weasyprint library for processing. This container runs as a sidecar on port 8080
+- `AUTH_AUTHORITY` - OIDC authority URL (for example `https://login.bcc.no`)
+- `AUTH_AUDIENCES` - comma-separated accepted token audiences
+
+Optional environment variables:
+
+- `AUTH_ISSUER` (default: `AUTH_AUTHORITY`)
+- `AUTH_REQUIRED_SCOPE` (default: `pdf#create`)
+- `MAX_REQUEST_BYTES` (default: `104857600`)
+- `MAX_PART_BYTES` (default: `52428800`)
+- `REQUEST_TIMEOUT_SECONDS` (default: `120`)

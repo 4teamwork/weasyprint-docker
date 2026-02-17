@@ -16,7 +16,9 @@ The request should contain the following file fields:
 
 - `html` - main HTML file
 - `css` - (optional) stylesheet file
-- `file.*` - (optional) additional attachments such as images. Name must start with `file.` or `attachment.`
+- `attachment.*` - (optional) PDF attachments embedded into the generated document
+- `file.*` - (optional) treated as attachments for backwards compatibility
+- `asset.*` - (optional) additional assets (such as images) available as local files to the HTML document
 
 The request must have an `Authorization Header` containing a JWT bearer with the following claims:
 

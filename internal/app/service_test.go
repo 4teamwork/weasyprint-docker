@@ -1,0 +1,255 @@
+package app
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestHealthcheckWithoutAuth(t *testing.T) {
+	svc := newTestService(fakeValidator{}, &fakeRunner{})
+	req := httptest.NewRequest(http.MethodGet, "/healthcheck", nil)
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+	if strings.TrimSpace(rec.Body.String()) != "OK" {
+		t.Fatalf("expected healthcheck body OK, got %q", rec.Body.String())
+	}
+}
+
+func TestRenderPDFUnauthorizedWhenMissingToken(t *testing.T) {
+	svc := newTestService(fakeValidator{}, &fakeRunner{})
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("")))
+	req.Header.Set("Content-Type", "multipart/form-data")
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", rec.Code)
+	}
+}
+
+func TestRenderPDFForbiddenWhenScopeMissing(t *testing.T) {
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#read"}}}, &fakeRunner{})
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("")))
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", "multipart/form-data")
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", rec.Code)
+	}
+}
+
+func TestRenderPDFBadContentType(t *testing.T) {
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, &fakeRunner{})
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("{}"))
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestRenderPDFRequiresHTML(t *testing.T) {
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, &fakeRunner{})
+	body, contentType := newMultipartBody(t, map[string]string{"css": "body{color:red;}"}, nil)
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", contentType)
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "No html file provided") {
+		t.Fatalf("expected missing html message, got %q", rec.Body.String())
+	}
+}
+
+func TestRenderPDFSuccess(t *testing.T) {
+	runner := &fakeRunner{output: []byte("%PDF-1.4")}
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+
+	body, contentType := newMultipartBody(t,
+		map[string]string{
+			"html":       "<html><body><h1>Hello</h1><img src=\"logo.png\"></body></html>",
+			"css":        "body{font-size:12pt;}",
+			"asset.logo": "binary-image-content",
+		},
+		map[string]string{"attachment.test": "notes.txt"},
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", contentType)
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body: %q", rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
+		t.Fatalf("expected application/pdf content type, got %q", ct)
+	}
+	if !bytes.Equal(rec.Body.Bytes(), []byte("%PDF-1.4")) {
+		t.Fatalf("unexpected PDF body: %q", rec.Body.String())
+	}
+
+	if runner.lastHTML == "" || runner.lastCSS == "" {
+		t.Fatalf("expected html and css files to be passed to runner")
+	}
+	if len(runner.lastAttachments) != 1 {
+		t.Fatalf("expected one attachment, got %d", len(runner.lastAttachments))
+	}
+}
+
+func TestRenderPDFSupportsFilePrefixAttachments(t *testing.T) {
+	runner := &fakeRunner{output: []byte("%PDF")}
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+
+	body, contentType := newMultipartBody(t,
+		map[string]string{"html": "<html><body>ok</body></html>"},
+		map[string]string{"file.terms": "terms.txt"},
+	)
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", contentType)
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+	if len(runner.lastAttachments) != 1 {
+		t.Fatalf("expected one attachment from file.* field, got %d", len(runner.lastAttachments))
+	}
+}
+
+func TestRenderPDFFailedRunnerReturns500(t *testing.T) {
+	runner := &fakeRunner{runErr: errors.New("boom")}
+	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+	body, contentType := newMultipartBody(t, map[string]string{"html": "<html></html>"}, nil)
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Authorization", "Bearer test-token")
+	req.Header.Set("Content-Type", contentType)
+	rec := httptest.NewRecorder()
+
+	svc.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rec.Code)
+	}
+}
+
+func TestSafeFilenamePreventsTraversal(t *testing.T) {
+	name := safeFilename("../../etc/passwd", "html")
+	if strings.Contains(name, "..") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		t.Fatalf("filename not sanitized: %q", name)
+	}
+}
+
+func newTestService(validator TokenValidator, runner PDFRunner) *Service {
+	return NewService(
+		validator,
+		runner,
+		Config{
+			RequiredScope:   "pdf#create",
+			MaxRequestBytes: 5 * 1024 * 1024,
+			MaxPartBytes:    2 * 1024 * 1024,
+			RequestTimeout:  3 * time.Second,
+			BwrapPath:       "/usr/bin/bwrap",
+			WeasyprintPath:  "/usr/bin/weasyprint",
+		},
+	)
+}
+
+func newMultipartBody(t *testing.T, fields map[string]string, files map[string]string) (*bytes.Buffer, string) {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	for name, value := range fields {
+		fileWriter, err := writer.CreateFormFile(name, name+".txt")
+		if err != nil {
+			t.Fatalf("failed to create form file %s: %v", name, err)
+		}
+		if _, err := io.Copy(fileWriter, strings.NewReader(value)); err != nil {
+			t.Fatalf("failed to write part %s: %v", name, err)
+		}
+	}
+
+	for name, filename := range files {
+		fileWriter, err := writer.CreateFormFile(name, filename)
+		if err != nil {
+			t.Fatalf("failed to create file part %s: %v", name, err)
+		}
+		if _, err := io.Copy(fileWriter, strings.NewReader("test-file")); err != nil {
+			t.Fatalf("failed to write file part %s: %v", name, err)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
+
+	return body, writer.FormDataContentType()
+}
+
+type fakeValidator struct {
+	claims TokenClaims
+	err    error
+}
+
+func (f fakeValidator) Validate(_ context.Context, _ string) (TokenClaims, error) {
+	if f.err != nil {
+		return TokenClaims{}, f.err
+	}
+	return f.claims, nil
+}
+
+type fakeRunner struct {
+	output          []byte
+	runErr          error
+	lastHTML        string
+	lastCSS         string
+	lastAttachments []string
+}
+
+func (f *fakeRunner) GeneratePDF(_ context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, outputFilename string) error {
+	f.lastHTML = htmlFilename
+	f.lastCSS = cssFilename
+	f.lastAttachments = attachmentFilenames
+	if f.runErr != nil {
+		return f.runErr
+	}
+	content := f.output
+	if len(content) == 0 {
+		content = []byte("%PDF")
+	}
+	return os.WriteFile(filepath.Join(workDir, outputFilename), content, 0o600)
+}

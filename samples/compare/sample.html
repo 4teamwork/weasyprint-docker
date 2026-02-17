@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Service Visual Comparison</title>
+</head>
+<body>
+  <header>
+    <img src="logo.svg" alt="logo" class="logo" />
+    <div>
+      <h1>PDF Service Rendering Comparison</h1>
+      <p class="sub">Expected identical output between old and new pipeline</p>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Typography</h2>
+      <p>
+        The quick brown fox jumps over the lazy dog. 1234567890. ÆØÅ æøå.
+      </p>
+      <p>
+        Inline style test: <span class="pill">Primary badge</span>
+      </p>
+    </section>
+
+    <section>
+      <h2>Table</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Notebook</td><td>3</td><td>99.90</td><td>299.70</td></tr>
+          <tr><td>Marker Set</td><td>2</td><td>45.00</td><td>90.00</td></tr>
+          <tr><td>Paper A4</td><td>5</td><td>12.40</td><td>62.00</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras rhoncus sit amet nunc quis finibus. Donec eu elit in erat tincidunt interdum. Vestibulum pretium felis tincidunt, tristique leo at, vestibulum leo. Ut orci sapien, efficitur non lorem ac, vulputate aliquet diam. Nunc dignissim urna euismod, porta dui at, porttitor mauris. Cras euismod magna enim, eget viverra dolor sollicitudin a. Duis blandit, purus at sagittis congue, dui ligula fringilla nibh, id aliquet est dolor vel tellus. Cras facilisis eros sed est blandit ultricies. Duis quis lacus ut justo imperdiet cursus eget ut lacus. Fusce efficitur, mi vel aliquam venenatis, felis lacus viverra mi, vel faucibus libero nibh vitae leo. Vestibulum vel sem laoreet sem vestibulum imperdiet. Fusce imperdiet, ipsum non venenatis pharetra, tortor ex posuere libero, et venenatis risus lacus placerat mi. Quisque egestas, magna dapibus vestibulum ultricies, augue elit hendrerit ex, eget placerat augue ipsum at velit.
+      </p>
+      <p>
+      Suspendisse vitae lectus id tellus viverra lobortis quis in nunc. Suspendisse tempor elit ex, dignissim sollicitudin dolor aliquam ut. Praesent molestie ligula sed mauris ultricies, tempus interdum elit ornare. Cras eget ligula urna. In hac habitasse platea dictumst. Fusce non sapien auctor, congue sem vitae, mattis nisl. Fusce vitae dolor viverra, fermentum quam id, venenatis felis. Nam elit elit, porttitor ut blandit porttitor, sodales eu nisl. Fusce sit amet enim ex. Etiam eget enim tristique ante molestie tempus cursus ut libero.
+      </p>
+      <p>
+      Etiam felis est, rhoncus in ante in, imperdiet eleifend ligula. Nunc varius fermentum nisl, nec placerat odio malesuada nec. Mauris ac mi vel justo tincidunt commodo ut eget mauris. In ut neque nisi. Pellentesque eget pulvinar ex, sed lobortis mi. Cras congue fringilla maximus. Nulla ut tempor velit, ac hendrerit ligula. Curabitur malesuada consectetur mi non vulputate. Sed hendrerit mauris porta congue sollicitudin. Cras eu dolor vel ex tincidunt faucibus. Suspendisse bibendum purus sit amet nunc auctor, sed gravida nulla commodo. Etiam convallis finibus massa et facilisis.
+      </p>
+      <p>
+      Cras quis tellus nec nunc pulvinar euismod ac quis tellus. Donec id magna ut purus tincidunt mollis ac sit amet risus. Fusce volutpat erat vel est volutpat, sed dapibus lorem efficitur. Fusce sodales libero nec ultrices porta. Suspendisse pretium pharetra diam, sed faucibus erat egestas vitae. Donec malesuada nibh blandit, pharetra arcu et, tempor magna. Suspendisse vehicula iaculis varius. Mauris suscipit massa ornare sollicitudin ullamcorper. Quisque volutpat, sem auctor scelerisque rutrum, purus ipsum congue nibh, sit amet consequat diam nisl non lacus. Cras quis sapien quis libero lacinia dictum volutpat laoreet orci. Sed non purus fringilla velit faucibus tempus. Integer turpis ipsum, viverra a fermentum vel, ornare sit amet est. Mauris sem urna, commodo et sapien sed, convallis consequat turpis. Nunc sit amet dolor non est aliquam dignissim vitae eget lorem. Sed interdum dignissim felis, ut aliquam orci pharetra vitae.
+      </p>
+      <p>
+      Suspendisse gravida vitae nibh vel convallis. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras scelerisque pellentesque augue quis volutpat. Donec in vehicula lorem, ut gravida dui. Etiam sed neque rhoncus, convallis nulla sed, molestie risus. Aenean vel erat in quam ornare dignissim. Duis scelerisque lorem non justo fermentum, in porttitor neque aliquam. Cras nec dui ac neque pellentesque viverra.
+      </p>
+
+    </section>
+    <section>
+      <h2>Page Break Test</h2>
+      <div class="page-break"></div>
+      <p>
+        This text should appear on the next page and verifies page break behavior.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

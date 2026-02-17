@@ -1,53 +1,50 @@
-FROM alpine:3.16 as pkg-builder
+FROM golang:1.23-bookworm AS builder
 
-RUN apk -U add \
-    sudo \
-    alpine-sdk \
-    apkbuild-pypi
+WORKDIR /src
 
-RUN mkdir -p /var/cache/distfiles && \
-    adduser -D packager && \
-    addgroup packager abuild && \
-    chgrp abuild /var/cache/distfiles && \
-    chmod g+w /var/cache/distfiles && \
-    echo "packager ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 
-WORKDIR /work
-USER packager
+COPY cmd ./cmd
+COPY internal ./internal
 
-RUN abuild-keygen -a -i -n
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o /out/pdf-service ./cmd/pdfservice
 
-COPY --chown=packager:packager packages/ ./
+FROM debian:bookworm-slim
 
-RUN cd py3-pydyf && \
-    abuild -r && \
-    cd ../py3-zopfli && \
-    abuild -r && \
-    cd ../py3-weasyprint && \
-    abuild -r
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        bubblewrap \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        libcairo2 \
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libharfbuzz0b \
+        libfontconfig1 \
+        libgdk-pixbuf-2.0-0 \
+        libffi8 \
+        shared-mime-info \
+        fonts-liberation \
+        fonts-linuxlibertine \
+    && python3 -m pip install --no-cache-dir --break-system-packages weasyprint \
+    && rm -rf /var/lib/apt/lists/*
 
+RUN useradd --system --create-home --uid 10001 pdfservice
 
-FROM alpine:3.16
-
-RUN addgroup --system weasyprint \
-     && adduser --system --ingroup weasyprint weasyprint
-
-COPY --from=pkg-builder /home/packager/packages/work/ /packages/
-COPY --from=pkg-builder /home/packager/.abuild/*.pub /etc/apk/keys/
-
-RUN apk add --no-cache --repository /packages \
-    font-liberation \
-    font-liberation-sans-narrow \
-    ttf-linux-libertine \
-    python3 \
-    py3-aiohttp \
-    py3-weasyprint
-
-ENV PYTHONUNBUFFERED 1
 WORKDIR /app
-USER weasyprint
+COPY --from=builder /out/pdf-service /usr/local/bin/pdf-service
+
+USER pdfservice
 
 EXPOSE 8080
 
-COPY server.py .
-CMD ["python3", "server.py"]
+ENV PORT=8080 \
+    BWRAP_PATH=/usr/bin/bwrap \
+    WEASYPRINT_PATH=/usr/local/bin/weasyprint \
+    AUTH_REQUIRED_SCOPE=pdf#create
+
+ENTRYPOINT ["/usr/local/bin/pdf-service"]
