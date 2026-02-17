@@ -21,7 +21,7 @@ type TokenValidator interface {
 }
 
 type PDFRunner interface {
-	GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, outputFilename string) error
+	GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error
 }
 
 type Service struct {
@@ -92,24 +92,14 @@ func (s *Service) renderPDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	artifact, err := s.generatePDFArtifact(r.Context(), reader)
-	if err != nil {
-		writeHTTPError(w, r, err)
-		return
-	}
-	defer artifact.Cleanup()
-
-	outputFile, err := artifact.Open()
-	if err != nil {
-		writeHTTPError(w, r, err)
-		return
-	}
-	defer outputFile.Close()
-
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", `attachment; filename="`+artifact.Filename+`"`)
-	w.WriteHeader(http.StatusOK)
-	_, _ = io.Copy(w, outputFile)
+	w.Header().Set("Content-Disposition", `attachment; filename="output.pdf"`)
+
+	err = s.generatePDFToWriter(r.Context(), reader, w)
+	if err != nil {
+		writeHTTPError(w, r, err)
+		return
+	}
 }
 
 func parseBearerToken(headerValue string) (string, error) {

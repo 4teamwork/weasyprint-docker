@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 )
 
-func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, outputFilename string) error {
+func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error {
 	args := []string{
 		"--unshare-all",
 		"--unshare-net",
@@ -31,7 +32,7 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 		"--",
 		r.WeasyprintPath,
 		htmlFilename,
-		outputFilename,
+		"-",
 		"--stylesheet",
 		cssFilename,
 	}
@@ -42,6 +43,7 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 
 	cmd := exec.CommandContext(ctx, r.BwrapPath, args...)
 	cmd.Env = []string{"HOME=/tmp", "TMPDIR=/tmp", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
+	cmd.Stdout = output
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 

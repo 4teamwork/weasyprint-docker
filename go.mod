@@ -1,6 +1,6 @@
 module github.com/bcc-code/pdf-service
 
-go 1.23.0
+go 1.25.0
 
 require github.com/lestrrat-go/jwx/v2 v2.1.6
 

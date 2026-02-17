@@ -8,8 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -218,7 +216,7 @@ func newMultipartBody(t *testing.T, fields map[string]string, files map[string]s
 }
 
 type fakeValidator struct {
-	err    error
+	err error
 }
 
 func (f fakeValidator) Validate(_ context.Context, _ string) error {
@@ -236,7 +234,7 @@ type fakeRunner struct {
 	lastAttachments []string
 }
 
-func (f *fakeRunner) GeneratePDF(_ context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, outputFilename string) error {
+func (f *fakeRunner) GeneratePDF(_ context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error {
 	f.lastHTML = htmlFilename
 	f.lastCSS = cssFilename
 	f.lastAttachments = attachmentFilenames
@@ -247,5 +245,6 @@ func (f *fakeRunner) GeneratePDF(_ context.Context, workDir string, htmlFilename
 	if len(content) == 0 {
 		content = []byte("%PDF")
 	}
-	return os.WriteFile(filepath.Join(workDir, outputFilename), content, 0o600)
+	_, err := output.Write(content)
+	return err
 }

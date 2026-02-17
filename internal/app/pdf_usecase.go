@@ -7,88 +7,61 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const defaultPageCSS = "@page { size: A4; margin: 2cm 2.5cm; }"
 
 var errPartTooLarge = errors.New("uploaded file too large")
 
-type PDFArtifact struct {
-	Path     string
-	Filename string
-	cleanup  func()
-}
-
-func (a PDFArtifact) Cleanup() {
-	if a.cleanup != nil {
-		a.cleanup()
-	}
-}
-
-func (a PDFArtifact) Open() (*os.File, error) {
-	file, err := os.Open(a.Path)
-	if err != nil {
-		return nil, NewInternalError("PDF generation failed.", err)
-	}
-	return file, nil
-}
-
-func (s *Service) generatePDFArtifact(ctx context.Context, reader *multipart.Reader) (PDFArtifact, error) {
+func (s *Service) generatePDFToWriter(ctx context.Context, reader *multipart.Reader, writer io.Writer) error {
 	workDir, err := os.MkdirTemp("", "pdf-service-*")
 	if err != nil {
-		return PDFArtifact{}, NewInternalError("Failed to process request.", err)
+		return NewInternalError("Failed to process request.", err)
 	}
+	defer func() { _ = os.RemoveAll(workDir) }()
 
-	cleanup := func() {
-		_ = os.RemoveAll(workDir)
-	}
-
-	htmlFilename, cssFilename, attachmentFilenames, err := s.persistParts(reader, workDir)
+	root, err := os.OpenRoot(workDir)
 	if err != nil {
-		cleanup()
-		return PDFArtifact{}, err
+		return NewInternalError("Failed to process request.", err)
+	}
+	defer root.Close()
+
+	htmlFilename, cssFilename, attachmentFilenames, err := s.persistParts(reader, root)
+	if err != nil {
+		return err
 	}
 
 	if htmlFilename == "" {
-		cleanup()
-		return PDFArtifact{}, NewBadRequestError("No html file provided.", nil)
+		return NewBadRequestError("No html file provided.", nil)
 	}
 
 	if cssFilename == "" {
 		cssFilename = "default.css"
-		defaultCSSPath := filepath.Join(workDir, cssFilename)
-		if writeErr := os.WriteFile(defaultCSSPath, []byte(defaultPageCSS), 0o600); writeErr != nil {
-			cleanup()
-			return PDFArtifact{}, NewInternalError("Failed to process request.", writeErr)
+		cssFile, writeErr := root.OpenFile(cssFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+		if writeErr != nil {
+			return NewInternalError("Failed to process request.", writeErr)
+		}
+		if _, writeErr = cssFile.Write([]byte(defaultPageCSS)); writeErr != nil {
+			cssFile.Close()
+			return NewInternalError("Failed to process request.", writeErr)
+		}
+		if closeErr := cssFile.Close(); closeErr != nil {
+			return NewInternalError("Failed to process request.", closeErr)
 		}
 	}
 
-	outputFilename := "output.pdf"
 	renderCtx, cancel := context.WithTimeout(ctx, s.config.RequestTimeout)
 	defer cancel()
 
-	if err := s.runner.GeneratePDF(renderCtx, workDir, htmlFilename, cssFilename, attachmentFilenames, outputFilename); err != nil {
-		cleanup()
-		return PDFArtifact{}, NewInternalError("PDF generation failed.", err)
+	if err := s.runner.GeneratePDF(renderCtx, workDir, htmlFilename, cssFilename, attachmentFilenames, writer); err != nil {
+		return NewInternalError("PDF generation failed.", err)
 	}
 
-	outputPath := filepath.Join(workDir, outputFilename)
-	if _, err := os.Stat(outputPath); err != nil {
-		cleanup()
-		return PDFArtifact{}, NewInternalError("PDF generation failed.", err)
-	}
-
-	return PDFArtifact{
-		Path:     outputPath,
-		Filename: outputFilename,
-		cleanup:  cleanup,
-	}, nil
+	return nil
 }
 
-func (s *Service) persistParts(reader *multipart.Reader, workDir string) (string, string, []string, error) {
+func (s *Service) persistParts(reader *multipart.Reader, root *os.Root) (string, string, []string, error) {
 	htmlFilename := ""
 	cssFilename := ""
 	attachmentFilenames := make([]string, 0)
@@ -102,43 +75,62 @@ func (s *Service) persistParts(reader *multipart.Reader, workDir string) (string
 			return "", "", nil, NewBadRequestError("Invalid multipart data.", err)
 		}
 
-		fieldName := part.FormName()
-		if fieldName == "" {
-			_ = part.Close()
-			continue
+		html, css, attachment, processErr := s.processPart(part, root)
+		if processErr != nil {
+			return "", "", nil, processErr
 		}
 
-		if !isAllowedField(fieldName) {
-			_, _ = io.Copy(io.Discard, part)
-			_ = part.Close()
-			continue
+		if html != "" {
+			htmlFilename = html
 		}
-
-		filename := safeFilename(part.FileName(), fieldName)
-		if filename == "" {
-			_ = part.Close()
-			continue
+		if css != "" {
+			cssFilename = css
 		}
-
-		savedFilename, saveErr := savePart(workDir, filename, part, s.config.MaxPartBytes)
-		if saveErr != nil {
-			if errors.Is(saveErr, errPartTooLarge) {
-				return "", "", nil, NewRequestTooLargeError("Uploaded file too large.", saveErr)
-			}
-			return "", "", nil, NewInternalError("Failed to process request.", saveErr)
-		}
-
-		switch {
-		case fieldName == "html":
-			htmlFilename = savedFilename
-		case fieldName == "css":
-			cssFilename = savedFilename
-		case strings.HasPrefix(fieldName, "attachment."), strings.HasPrefix(fieldName, "file."):
-			attachmentFilenames = append(attachmentFilenames, savedFilename)
+		if attachment != "" {
+			attachmentFilenames = append(attachmentFilenames, attachment)
 		}
 	}
 
 	return htmlFilename, cssFilename, attachmentFilenames, nil
+}
+
+func (s *Service) processPart(part *multipart.Part, root *os.Root) (string, string, string, error) {
+	defer part.Close()
+
+	fieldName := part.FormName()
+	if fieldName == "" {
+		return "", "", "", nil
+	}
+
+	if !isAllowedField(fieldName) {
+		_, _ = io.Copy(io.Discard, part)
+		return "", "", "", nil
+	}
+
+	filename := safeFilename(part.FileName(), fieldName)
+	if filename == "" {
+		return "", "", "", nil
+	}
+
+	savedFilename, saveErr := savePart(root, filename, part, s.config.MaxPartBytes)
+	if saveErr != nil {
+		if errors.Is(saveErr, errPartTooLarge) {
+			return "", "", "", NewRequestTooLargeError("Uploaded file too large.", saveErr)
+		}
+		return "", "", "", NewInternalError("Failed to process request.", saveErr)
+	}
+
+	if fieldName == "html" {
+		return savedFilename, "", "", nil
+	}
+	if fieldName == "css" {
+		return "", savedFilename, "", nil
+	}
+	if strings.HasPrefix(fieldName, "attachment.") || strings.HasPrefix(fieldName, "file.") {
+		return "", "", savedFilename, nil
+	}
+
+	return "", "", "", nil
 }
 
 func isAllowedField(field string) bool {
@@ -148,23 +140,17 @@ func isAllowedField(field string) bool {
 func safeFilename(originalFilename string, fieldName string) string {
 	trimmed := strings.TrimSpace(originalFilename)
 	if trimmed == "" {
-		trimmed = fieldName
+		return fieldName
 	}
 	base := filepath.Base(trimmed)
-	base = strings.ReplaceAll(base, string(filepath.Separator), "_")
-	base = strings.ReplaceAll(base, "/", "_")
-	base = strings.ReplaceAll(base, "\\", "_")
-	base = strings.TrimSpace(base)
-	if base == "" || base == "." || base == ".." {
-		return ""
+	if base == "." {
+		return fieldName
 	}
 	return base
 }
 
-func savePart(workDir string, filename string, part *multipart.Part, maxPartBytes int64) (string, error) {
-	resolvedFilename := resolveUniqueFilename(workDir, filename)
-	fullPath := filepath.Join(workDir, resolvedFilename)
-	file, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+func savePart(root *os.Root, filename string, part *multipart.Part, maxPartBytes int64) (string, error) {
+	file, err := root.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return "", err
 	}
@@ -172,7 +158,6 @@ func savePart(workDir string, filename string, part *multipart.Part, maxPartByte
 
 	read := &io.LimitedReader{R: part, N: maxPartBytes + 1}
 	written, err := io.Copy(file, read)
-	_ = part.Close()
 	if err != nil {
 		return "", err
 	}
@@ -180,22 +165,5 @@ func savePart(workDir string, filename string, part *multipart.Part, maxPartByte
 		return "", errPartTooLarge
 	}
 
-	return resolvedFilename, nil
-}
-
-func resolveUniqueFilename(workDir string, candidate string) string {
-	if _, err := os.Stat(filepath.Join(workDir, candidate)); errors.Is(err, os.ErrNotExist) {
-		return candidate
-	}
-
-	ext := filepath.Ext(candidate)
-	base := strings.TrimSuffix(candidate, ext)
-	for index := 2; index < 10000; index++ {
-		resolved := base + "_" + strconv.Itoa(index) + ext
-		if _, err := os.Stat(filepath.Join(workDir, resolved)); errors.Is(err, os.ErrNotExist) {
-			return resolved
-		}
-	}
-
-	return strconv.FormatInt(time.Now().UnixNano(), 10) + "_" + candidate
+	return filename, nil
 }
