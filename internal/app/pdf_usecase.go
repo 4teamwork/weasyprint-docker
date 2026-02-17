@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const defaultStylesheetPath = "/etc/pdf-service/default.css"
+const defaultStylesheetPath = "/defaults/default.css"
 
 func (s *Service) generatePDFToWriter(ctx context.Context, reader *multipart.Reader, writer io.Writer) error {
 	workDir, err := os.MkdirTemp("", "pdf-service-*")

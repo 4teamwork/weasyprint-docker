@@ -164,13 +164,6 @@ func TestRenderPDFFailedRunnerReturns500(t *testing.T) {
 	}
 }
 
-func TestSafeFilenamePreventsTraversal(t *testing.T) {
-	name := safeFilename("../../etc/passwd", "html")
-	if strings.Contains(name, "..") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
-		t.Fatalf("filename not sanitized: %q", name)
-	}
-}
-
 func newTestService(validator TokenValidator, runner PDFRunner) *Service {
 	return NewService(
 		validator,

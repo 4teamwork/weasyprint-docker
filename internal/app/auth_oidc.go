@@ -33,9 +33,10 @@ func NewOIDCValidator(ctx context.Context, authority string, audience string, sc
 
 	if scope == "" {
 		return nil, errors.New("scope is required")
+
 	}
 
-	jwksURI := authority + "/.well-known/jwks.json"
+	jwksURI := strings.TrimRight(authority, "/") + "/.well-known/jwks.json"
 
 	keySet, err := jwk.Fetch(ctx, jwksURI, jwk.WithHTTPClient(&http.Client{Timeout: 10 * time.Second}))
 	if err != nil {

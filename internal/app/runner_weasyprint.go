@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const sandboxDefaultStylesheetPath = "/etc/pdf-service/default.css"
+const sandboxDefaultStylesheetPath = "/defaults/default.css"
 
 func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error {
 	defaultStylesheetPath := r.DefaultStylesheetPath
@@ -29,6 +29,7 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/sbin", "/sbin",
 		"--ro-bind", "/etc", "/etc",
+		"--dir", "/defaults",
 		"--ro-bind", defaultStylesheetPath, sandboxDefaultStylesheetPath,
 		"--tmpfs", "/tmp",
 		"--tmpfs", "/run",
