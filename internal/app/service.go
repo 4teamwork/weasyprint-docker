@@ -118,6 +118,7 @@ func parseBearerToken(headerValue string) (string, error) {
 }
 
 type WeasyprintRunner struct {
-	BwrapPath      string
-	WeasyprintPath string
+	BwrapPath             string
+	WeasyprintPath        string
+	DefaultStylesheetPath string
 }

@@ -27,7 +27,7 @@ func main() {
 
 	svc := app.NewService(
 		validator,
-		app.WeasyprintRunner{BwrapPath: defaultBwrapPath, WeasyprintPath: defaultWeasyprintPath},
+		app.WeasyprintRunner{BwrapPath: defaultBwrapPath, WeasyprintPath: defaultWeasyprintPath, DefaultStylesheetPath: defaultStylesheetPath},
 		app.Config{
 			MaxRequestBytes: defaultMaxRequestBytes,
 			MaxPartBytes:    defaultMaxPartBytes,
@@ -58,6 +58,7 @@ const (
 	defaultRequestTimeout  = 120 * time.Second
 	defaultBwrapPath       = "bwrap"
 	defaultWeasyprintPath  = "weasyprint"
+	defaultStylesheetPath  = "assets/default.css"
 )
 
 func getEnv(name string, fallback string) string {

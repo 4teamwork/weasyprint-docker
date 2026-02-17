@@ -37,6 +37,7 @@ RUN useradd --system --create-home --uid 10001 pdfservice
 
 WORKDIR /app
 COPY --from=builder /out/pdf-service /usr/local/bin/pdf-service
+COPY assets/default.css /app/assets/default.css
 
 USER pdfservice
 

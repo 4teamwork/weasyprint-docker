@@ -9,7 +9,14 @@ import (
 	"strings"
 )
 
+const sandboxDefaultStylesheetPath = "/etc/pdf-service/default.css"
+
 func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlFilename string, cssFilename string, attachmentFilenames []string, output io.Writer) error {
+	defaultStylesheetPath := r.DefaultStylesheetPath
+	if defaultStylesheetPath == "" {
+		defaultStylesheetPath = "assets/default.css"
+	}
+
 	args := []string{
 		"--unshare-all",
 		"--unshare-net",
@@ -22,6 +29,7 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/sbin", "/sbin",
 		"--ro-bind", "/etc", "/etc",
+		"--ro-bind", defaultStylesheetPath, sandboxDefaultStylesheetPath,
 		"--tmpfs", "/tmp",
 		"--tmpfs", "/run",
 		"--bind", workDir, "/workspace",
