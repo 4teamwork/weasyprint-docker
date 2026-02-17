@@ -19,7 +19,7 @@ func main() {
 	authority := mustGetEnv("AUTH_AUTHORITY")
 	audience := mustGetEnv("AUTH_AUDIENCE")
 
-	validator, err := app.NewOIDCValidator(context.Background(), authority, audience)
+	validator, err := app.NewOIDCValidator(context.Background(), authority, audience, defaultRequiredScope)
 	if err != nil {
 		slog.Error("failed to initialize authentication", "error", err)
 		os.Exit(1)
@@ -29,7 +29,6 @@ func main() {
 		validator,
 		app.WeasyprintRunner{BwrapPath: defaultBwrapPath, WeasyprintPath: defaultWeasyprintPath},
 		app.Config{
-			RequiredScope:   defaultRequiredScope,
 			MaxRequestBytes: defaultMaxRequestBytes,
 			MaxPartBytes:    defaultMaxPartBytes,
 			RequestTimeout:  defaultRequestTimeout,
@@ -77,4 +76,3 @@ func mustGetEnv(name string) string {
 	}
 	return value
 }
-

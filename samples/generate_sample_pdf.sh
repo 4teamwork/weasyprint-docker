@@ -9,7 +9,7 @@ NEW_URL="${NEW_URL:-http://localhost:8080/}"
 NEW_BEARER_TOKEN="${NEW_BEARER_TOKEN:-}"
 
 if [[ -z "${NEW_BEARER_TOKEN}" ]]; then
-  echo "NEW_BEARER_TOKEN is not set. The new service requires JWT auth."
+  echo "NEW_BEARER_TOKEN is not set. The service requires JWT auth."
   echo "Set NEW_BEARER_TOKEN and rerun."
   exit 1
 fi

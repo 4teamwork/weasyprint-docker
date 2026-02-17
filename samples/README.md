@@ -7,7 +7,7 @@ This folder contains a deterministic sample document for generating a PDF from t
 - `sample.html`
 - `sample.css`
 - `logo.svg`
-- `generate_and_compare.sh` (generates `new.pdf`)
+- `generate_sample_pdf.sh` (generates `new.pdf`)
 
 ## Usage
 
@@ -17,12 +17,12 @@ This folder contains a deterministic sample document for generating a PDF from t
 Run:
 
 ```bash
-cd samples/compare
-NEW_BEARER_TOKEN="<token>" ./generate_and_compare.sh
+cd samples
+NEW_BEARER_TOKEN="<token>" ./generate_sample_pdf.sh
 ```
 
 Optional environment overrides:
 
 - `NEW_URL`
 
-Output is written to `samples/compare/out/new.pdf`.
+Output is written to `samples/out/new.pdf`.

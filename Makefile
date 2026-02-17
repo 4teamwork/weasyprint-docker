@@ -18,4 +18,4 @@ docker-down:
 	docker compose down
 
 sample-pdf:
-	cd samples/compare && ./generate_and_compare.sh
+	cd samples && ./generate_sample_pdf.sh

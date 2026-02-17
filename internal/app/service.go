@@ -6,24 +6,18 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 )
 
 type Config struct {
-	RequiredScope   string
 	MaxRequestBytes int64
 	MaxPartBytes    int64
 	RequestTimeout  time.Duration
 }
 
-type TokenClaims struct {
-	Scopes []string
-}
-
 type TokenValidator interface {
-	Validate(ctx context.Context, token string) (TokenClaims, error)
+	Validate(ctx context.Context, token string) error
 }
 
 type PDFRunner interface {
@@ -64,14 +58,13 @@ func (s *Service) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := s.validator.Validate(r.Context(), token)
+		err = s.validator.Validate(r.Context(), token)
 		if err != nil {
+			if errors.Is(err, ErrForbidden) {
+				writeHTTPError(w, r, NewForbiddenError("Forbidden", err))
+				return
+			}
 			writeHTTPError(w, r, NewUnauthorizedError("Unauthorized", err))
-			return
-		}
-
-		if !hasScope(claims.Scopes, s.config.RequiredScope) {
-			writeHTTPError(w, r, NewForbiddenError("Forbidden", nil))
 			return
 		}
 
@@ -132,13 +125,6 @@ func parseBearerToken(headerValue string) (string, error) {
 		return "", errors.New("missing token")
 	}
 	return token, nil
-}
-
-func hasScope(scopes []string, requiredScope string) bool {
-	if requiredScope == "" {
-		return true
-	}
-	return slices.Contains(scopes, requiredScope)
 }
 
 type WeasyprintRunner struct {

@@ -44,7 +44,7 @@ func TestRenderPDFUnauthorizedWhenMissingToken(t *testing.T) {
 }
 
 func TestRenderPDFForbiddenWhenScopeMissing(t *testing.T) {
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#read"}}}, &fakeRunner{})
+	svc := newTestService(fakeValidator{err: ErrForbidden}, &fakeRunner{})
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("")))
 	req.Header.Set("Authorization", "Bearer test-token")
 	req.Header.Set("Content-Type", "multipart/form-data")
@@ -58,7 +58,7 @@ func TestRenderPDFForbiddenWhenScopeMissing(t *testing.T) {
 }
 
 func TestRenderPDFBadContentType(t *testing.T) {
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, &fakeRunner{})
+	svc := newTestService(fakeValidator{}, &fakeRunner{})
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("{}"))
 	req.Header.Set("Authorization", "Bearer test-token")
 	req.Header.Set("Content-Type", "application/json")
@@ -72,7 +72,7 @@ func TestRenderPDFBadContentType(t *testing.T) {
 }
 
 func TestRenderPDFRequiresHTML(t *testing.T) {
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, &fakeRunner{})
+	svc := newTestService(fakeValidator{}, &fakeRunner{})
 	body, contentType := newMultipartBody(t, map[string]string{"css": "body{color:red;}"}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	req.Header.Set("Authorization", "Bearer test-token")
@@ -91,7 +91,7 @@ func TestRenderPDFRequiresHTML(t *testing.T) {
 
 func TestRenderPDFSuccess(t *testing.T) {
 	runner := &fakeRunner{output: []byte("%PDF-1.4")}
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+	svc := newTestService(fakeValidator{}, runner)
 
 	body, contentType := newMultipartBody(t,
 		map[string]string{
@@ -129,7 +129,7 @@ func TestRenderPDFSuccess(t *testing.T) {
 
 func TestRenderPDFSupportsFilePrefixAttachments(t *testing.T) {
 	runner := &fakeRunner{output: []byte("%PDF")}
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+	svc := newTestService(fakeValidator{}, runner)
 
 	body, contentType := newMultipartBody(t,
 		map[string]string{"html": "<html><body>ok</body></html>"},
@@ -152,7 +152,7 @@ func TestRenderPDFSupportsFilePrefixAttachments(t *testing.T) {
 
 func TestRenderPDFFailedRunnerReturns500(t *testing.T) {
 	runner := &fakeRunner{runErr: errors.New("boom")}
-	svc := newTestService(fakeValidator{claims: TokenClaims{Scopes: []string{"pdf#create"}}}, runner)
+	svc := newTestService(fakeValidator{}, runner)
 	body, contentType := newMultipartBody(t, map[string]string{"html": "<html></html>"}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	req.Header.Set("Authorization", "Bearer test-token")
@@ -178,7 +178,6 @@ func newTestService(validator TokenValidator, runner PDFRunner) *Service {
 		validator,
 		runner,
 		Config{
-			RequiredScope:   "pdf#create",
 			MaxRequestBytes: 5 * 1024 * 1024,
 			MaxPartBytes:    2 * 1024 * 1024,
 			RequestTimeout:  3 * time.Second,
@@ -219,15 +218,14 @@ func newMultipartBody(t *testing.T, fields map[string]string, files map[string]s
 }
 
 type fakeValidator struct {
-	claims TokenClaims
 	err    error
 }
 
-func (f fakeValidator) Validate(_ context.Context, _ string) (TokenClaims, error) {
+func (f fakeValidator) Validate(_ context.Context, _ string) error {
 	if f.err != nil {
-		return TokenClaims{}, f.err
+		return f.err
 	}
-	return f.claims, nil
+	return nil
 }
 
 type fakeRunner struct {
