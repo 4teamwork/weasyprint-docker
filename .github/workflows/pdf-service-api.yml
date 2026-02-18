@@ -50,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: ${{fromJSON((inputs.environment || 'all') == 'all' && '["sandbox", "staging", "prod"]' || format('["{0}"]', inputs.environment))}}
+        env: ${{fromJSON((inputs.environment || 'all') == 'all' && '["sandbox", "prod"]' || format('["{0}"]', inputs.environment))}}
     environment: ${{matrix.env}}
     env:
       GCP_IMAGE_TAG: ${{fromJson(vars.PROPS).gcp.location}}-docker.pkg.dev/${{ fromJson(vars.PROPS).gcp.project_id }}/ar-main/main:${{ github.sha }}

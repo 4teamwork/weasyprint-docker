@@ -46,6 +46,7 @@ func (r WeasyprintRunner) buildArgs(workDir string, htmlFilename string, cssFile
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/bin", "/bin",
 		"--ro-bind", "/etc/fonts", "/etc/fonts",
+		"--ro-bind", "/var/cache/fontconfig", "/var/cache/fontconfig",
 
 		"--ro-bind", defaultStylesheetPath, sandboxDefaultStylesheetPath,
 		"--ro-bind", workDir, "/workspace",
