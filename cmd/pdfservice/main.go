@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -26,8 +27,7 @@ func main() {
 
 	validator, err := app.NewOIDCValidator(context.Background(), authority, audience, defaultRequiredScope, obs)
 	if err != nil {
-		logger.Error("failed to initialize authentication", "error", err)
-		os.Exit(1)
+		log.Fatalf("failed to initialize authentication: %s", err)
 	}
 
 	svc := app.NewService(
@@ -51,8 +51,7 @@ func main() {
 
 	logger.Info("service starting", "listen_address", ":"+port, "authority", authority, "audience", audience)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error("server failed", "error", err)
-		os.Exit(1)
+		log.Fatalf("server failed: %s", err)
 	}
 }
 
