@@ -20,8 +20,8 @@ type OIDCValidator struct {
 	keySet   jwk.Set
 }
 
-func NewOIDCValidator(ctx context.Context, authority string, audience string, scope string, obs Observability) (*OIDCValidator, error) {
-	if authority == "" {
+func NewOIDCValidator(ctx context.Context, issuer string, audience string, scope string, obs Observability) (*OIDCValidator, error) {
+	if issuer == "" {
 		return nil, errors.New("authority is required")
 	}
 
@@ -33,8 +33,8 @@ func NewOIDCValidator(ctx context.Context, authority string, audience string, sc
 		return nil, errors.New("scope is required")
 	}
 
-	normalizedAuthority := strings.TrimRight(authority, "/")
-	jwksURI := normalizedAuthority + "/.well-known/jwks.json"
+	normalizedIssuer := strings.TrimRight(issuer, "/")
+	jwksURI := normalizedIssuer + "/.well-known/jwks.json"
 
 	keySet, err := jwk.Fetch(ctx, jwksURI, jwk.WithHTTPClient(obs.HttpClient(nil)))
 	if err != nil {
@@ -45,7 +45,7 @@ func NewOIDCValidator(ctx context.Context, authority string, audience string, sc
 	}
 
 	validator := &OIDCValidator{
-		issuer:   normalizedAuthority,
+		issuer:   normalizedIssuer,
 		audience: audience,
 		scope:    scope,
 		keySet:   keySet,
@@ -68,7 +68,7 @@ func (v *OIDCValidator) Validate(ctx context.Context, token string) error {
 		return fmt.Errorf("token claims validation failed: %w", err)
 	}
 
-	if parsedToken.Issuer() != v.issuer {
+	if normalizeIssuer(parsedToken.Issuer()) != v.issuer {
 		return errors.New("token claims validation failed: issuer mismatch")
 	}
 
@@ -91,4 +91,8 @@ func hasRequiredScope(token jwt.Token, required string) bool {
 	}
 
 	return slices.Contains(strings.Fields(scope), required)
+}
+
+func normalizeIssuer(issuer string) string {
+	return strings.TrimRight(issuer, "/")
 }

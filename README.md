@@ -1,10 +1,11 @@
 # PDF Service
 
-A web service for generating PDF files from HTML.  
+A web service for generating PDF files from HTML.
 
 The service is implemented as a single Go web service that validates JWT bearer tokens, securely processes multipart uploads and invokes [WeasyPrint](https://weasyprint.readthedocs.io/en/stable/index.html) through a `bubblewrap` sandbox.
 
 ## Usage
+
 See the [documentation](./docs/README.md) for usage.
 See [architecture notes](./docs/architecture.md) for structure.
 
@@ -14,8 +15,8 @@ The service runs as a single container exposing port `8080`.
 
 Required environment variables:
 
-- `AUTH_AUTHORITY` - OIDC authority URL (for example `https://login.bcc.no`)
-- `AUTH_AUDIENCE` - accepted token audience (for example `api.bcc.no`)
+- `AUTH_AUTHORITY` - OIDC authority URL (for example `https://login.sandbox.bcc.no`)
+- `AUTH_AUDIENCE` - accepted token audience (for example `sandbox-api.bcc.no`)
 
 Optional environment variables:
 
