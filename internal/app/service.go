@@ -122,5 +122,4 @@ type WeasyprintRunner struct {
 	BwrapPath             string
 	WeasyprintPath        string
 	DefaultStylesheetPath string
-	Stderr                io.Writer
 }

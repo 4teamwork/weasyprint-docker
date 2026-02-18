@@ -15,14 +15,9 @@ func (r WeasyprintRunner) GeneratePDF(ctx context.Context, workDir string, htmlF
 	args := r.buildArgs(workDir, htmlFilename, cssFilename, attachmentFilenames)
 
 	cmd := exec.CommandContext(ctx, r.BwrapPath, args...)
-	cmd.Env = []string{"HOME=/tmp", "TMPDIR=/tmp", "PATH=/usr/local/bin:/usr/bin"}
 	cmd.Stdout = output
 	var stderr bytes.Buffer
-	if r.Stderr != nil {
-		cmd.Stderr = io.MultiWriter(&stderr, r.Stderr)
-	} else {
-		cmd.Stderr = &stderr
-	}
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("weasyprint failed: %w: %s", err, strings.TrimSpace(stderr.String()))
