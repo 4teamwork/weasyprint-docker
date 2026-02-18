@@ -90,4 +90,4 @@ jobs:
           service: main
           image: ${{ env.GCP_IMAGE_TAG }}
           region: ${{ fromJson(vars.PROPS).gcp.location }}
-          flags: --service-account=sa-${{ vars.GCP_CLOUDRUN_NAME }}@${{fromJson(vars.PROPS).gcp.project_id}}.iam.gserviceaccount.com
+          flags: --service-account=sa-main@${{fromJson(vars.PROPS).gcp.project_id}}.iam.gserviceaccount.com
