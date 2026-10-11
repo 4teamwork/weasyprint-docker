@@ -4,7 +4,7 @@
 pkgname=py3-weasyprint
 #_pkgreal is used by apkbuild-pypi to find modules at PyPI
 _pkgreal=weasyprint
-pkgver=68.1
+pkgver=70.0
 pkgrel=0
 pkgdesc="The Awesome Document Factory"
 provides=""
@@ -13,7 +13,7 @@ url="http://packages.python.org/pypi/weasyprint"
 arch="noarch"
 license="BSD-3-Clause"
 depends="python3 py3-pydyf py3-cffi py3-tinyhtml5 py3-tinycss2 py3-cssselect2 py3-pyphen py3-pillow py3-fonttools py3-brotli py3-zopfli pango"
-checkdepends="ghostscript py3-pytest py3-pytest-cov py3-pytest-isort py3-pytest-xdist ttf-dejavu"
+checkdepends="ghostscript py3-pytest py3-pytest-cov py3-pytest-isort py3-pytest-xdist font-dejavu font-noto-emoji"
 makedepends="python3-dev py3-flit-core py3-build py3-installer pango-dev"
 subpackages=""
 source="https://files.pythonhosted.org/packages/source/w/weasyprint/weasyprint-$pkgver.tar.gz"
@@ -32,5 +32,5 @@ package() {
 }
 
 sha512sums="
-b080a40882d0b56dc3696aa4edc403a85c20a7b69a14c0bf179f0897af173945f327bc42f9be354d6734822af54413c56a1fec84b8ecd37e51bb5b752c3c676a  weasyprint-68.1.tar.gz
+52e93a808419f4af1de4382c814bfb12d04f0f33197ee945209cde6f98de81ea793072d3b44119ec687a0973a174164d03bb8ac06346da7dae171aa97ebbb9a1  weasyprint-70.0.tar.gz
 "

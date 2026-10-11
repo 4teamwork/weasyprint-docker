@@ -1,7 +1,7 @@
 # Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
 pkgname=py3-cssselect2
 _pyname=cssselect2
-pkgver=0.8.0
+pkgver=0.10.1
 pkgrel=1
 pkgdesc="CSS selectors for Python ElementTree"
 url="https://pypi.org/project/cssselect2/"
@@ -36,5 +36,5 @@ package() {
 }
 
 sha512sums="
-fe1fbd503a8f5c06ff33856c131365f1f154610abb59c2fdef3f0e679c2421f08f9fd5e82e03f541481180551e3e0984d46243629754e8a1fa0f189743fbd23f  cssselect2-0.8.0.tar.gz
+8a95e1c069e392f460836f94cc41f3764db25303360e51d32d005b3763c2181cb60e05fa234b9cfe363f81b0f09068fd08c8552cdb21cb3f77ace2c800c01583  cssselect2-0.10.1.tar.gz
 "

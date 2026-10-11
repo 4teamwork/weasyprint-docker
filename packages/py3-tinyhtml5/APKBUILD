@@ -1,7 +1,7 @@
 # Contributor: Patrycja Rosa <alpine@ptrcnull.me>
 # Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
 pkgname=py3-tinyhtml5
-pkgver=2.0.0
+pkgver=2.1.0
 pkgrel=0
 pkgdesc="Tiny HTML5 parser"
 url="https://github.com/CourtBouillon/tinyhtml5"
@@ -32,5 +32,5 @@ package() {
 }
 
 sha512sums="
-6c8b367311f4a1ca39b898819fe710308e8aefcaddb2abb4fe1a0cc2ee57a8edee4da006465bbae80a3991c362e58598126d60805209d0543419efd07b3e6c5d  py3-tinyhtml5-2.0.0.tar.gz
+7ffc41f762ce76df8a455876914007119d9ca976a91174a6e8448861664dcbab75358b2cd06b148cdfc33d091c925940e29162b75d05531b3279f416c5c599cb  py3-tinyhtml5-2.1.0.tar.gz
 "
